@@ -32,10 +32,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void _register() {
     if (formKey.currentState!.validate()) {
       context.read<AuthProvider>().registerWithEmailPassword(
-            email: emailController.text,
-            password: passwordController.text,
-            displayName: displayNameController.text,
-          );
+        email: emailController.text,
+        password: passwordController.text,
+        displayName: displayNameController.text,
+      );
     }
   }
 
@@ -60,18 +60,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 // Logo/Title
                 const Text(
                   'Create Account',
-                  style: TextStyle(
-                    fontSize: 28,
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 Text(
                   'Join Splitly today',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 48),
                 // Display name field
@@ -173,8 +167,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   builder: (context, authProvider, child) {
                     return MyButton(
                       text: 'Sign up with Google',
-                      onPressed: () =>
-                          authProvider.signInWithGoogle(),
+                      onPressed: () => authProvider.signInWithGoogle(),
                       isLoading: authProvider.isLoading,
                       backgroundColor: Colors.white,
                       textColor: Colors.black,

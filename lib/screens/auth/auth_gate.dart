@@ -25,21 +25,12 @@ class _AuthGateState extends State<AuthGate> {
   Widget build(BuildContext context) {
     return Consumer<AuthProvider>(
       builder: (context, authProvider, _) {
-        // Loading state
-        if (authProvider.currentUser == null && !showLoginPage) {
-          // Show splash while checking auth state
-          if (authProvider.currentUser == null &&
-              authProvider.userProfile == null) {
-            return const SplashScreen();
-          }
-        }
-
-        // Authenticated
+        // Authenticated - show splash then navigate to home
         if (authProvider.isAuthenticated) {
-          return const SplashScreen(); // Will navigate to home after splash
+          return const SplashScreen();
         }
 
-        // Unauthenticated
+        // Unauthenticated - show login or register
         return showLoginPage
             ? LoginScreen(onToggleAuthMode: toggleAuthMode)
             : RegisterScreen(onToggleAuthMode: toggleAuthMode);

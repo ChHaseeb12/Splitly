@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:splitly/providers/auth_provider.dart';
+import 'package:splitly/providers/locale_provider.dart';
+import '../friends/friend_list_screen.dart';
+import '../groups/group_list_screen.dart';
+import '../settings/currency_settings_screen.dart';
+import '../settings/language_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -12,6 +17,14 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  final List<Widget> _screens = [
+    const DashboardScreen(),
+    const FriendListScreen(),
+    const GroupListScreen(),
+    const ActivityScreen(),
+    const ProfileScreen(),
+  ];
+
   void _onItemTapped(int index) {
     setState(() {
       _selectedIndex = index;
@@ -21,11 +34,37 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      body: _screens[_selectedIndex],
+      bottomNavigationBar: BottomNavigationBar(
+        items: const <BottomNavigationBarItem>[
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Dashboard',
+          ),
+          BottomNavigationBarItem(icon: Icon(Icons.people), label: 'Friends'),
+          BottomNavigationBarItem(icon: Icon(Icons.group), label: 'Groups'),
+          BottomNavigationBarItem(icon: Icon(Icons.history), label: 'Activity'),
+          BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.blue,
+        unselectedItemColor: Colors.grey,
+        onTap: _onItemTapped,
+        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+}
+
+// Dashboard Screen (Placeholder)
+class DashboardScreen extends StatelessWidget {
+  const DashboardScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
       appBar: AppBar(
-        title: const Text('Splitly'),
-        elevation: 0,
-        backgroundColor: Colors.white,
-        foregroundColor: Colors.black,
+        title: const Text('Dashboard'),
         actions: [
           Padding(
             padding: const EdgeInsets.all(8.0),
@@ -63,55 +102,185 @@ class _HomeScreenState extends State<HomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Text(
-              'Welcome to Splitly',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
+            Icon(Icons.dashboard, size: 80, color: Colors.grey[400]),
             const SizedBox(height: 16),
             Text(
-              'Tab index: $_selectedIndex',
-              style: const TextStyle(fontSize: 16),
+              'Dashboard',
+              style: TextStyle(fontSize: 24, color: Colors.grey[600]),
             ),
-            const SizedBox(height: 32),
+            const SizedBox(height: 8),
             Text(
-              'Current sections: Dashboard (0), Friends (1), Groups (2), Activity (3), Profile (4)',
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey[600]),
+              'Coming in Phase 8',
+              style: TextStyle(color: Colors.grey[500]),
             ),
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const <BottomNavigationBarItem>[
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: 'Dashboard',
+    );
+  }
+
+  void _showLogoutConfirmation(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Logout'),
+        content: const Text('Are you sure you want to logout?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.people),
-            label: 'Friends',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.group),
-            label: 'Groups',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.history),
-            label: 'Activity',
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: 'Profile',
+          TextButton(
+            onPressed: () {
+              context.read<AuthProvider>().logout();
+              Navigator.pop(context);
+            },
+            child: const Text('Logout'),
           ),
         ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.blue,
-        unselectedItemColor: Colors.grey,
-        onTap: _onItemTapped,
-        type: BottomNavigationBarType.fixed,
+      ),
+    );
+  }
+}
+
+// Activity Screen (Placeholder)
+class ActivityScreen extends StatelessWidget {
+  const ActivityScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Activity')),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.history, size: 80, color: Colors.grey[400]),
+            const SizedBox(height: 16),
+            Text(
+              'Activity Feed',
+              style: TextStyle(fontSize: 24, color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Coming in Phase 12',
+              style: TextStyle(color: Colors.grey[500]),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// Profile Screen
+class ProfileScreen extends StatelessWidget {
+  const ProfileScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final authProvider = context.watch<AuthProvider>();
+    final userProfile = authProvider.userProfile;
+
+    return Scaffold(
+      appBar: AppBar(title: const Text('Profile')),
+      body: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          // User Info Card
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  CircleAvatar(
+                    radius: 40,
+                    backgroundColor: Colors.blue,
+                    child: Text(
+                      userProfile?.displayName.substring(0, 1).toUpperCase() ??
+                          'U',
+                      style: const TextStyle(fontSize: 32, color: Colors.white),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    userProfile?.displayName ?? 'User',
+                    style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    userProfile?.email ?? '',
+                    style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Settings Section
+          const Text(
+            'Settings',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 8),
+
+          // Currency Settings
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.attach_money),
+              title: const Text('Currency Settings'),
+              subtitle: Text('Default: ${userProfile?.currency ?? 'USD'}'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const CurrencySettingsScreen(),
+                  ),
+                );
+              },
+            ),
+          ),
+
+          // Language Settings
+          Card(
+            child: Consumer<LocaleProvider>(
+              builder: (context, localeProvider, _) {
+                return ListTile(
+                  leading: const Icon(Icons.language),
+                  title: const Text('Language Settings'),
+                  subtitle: Text(
+                    'Default: ${localeProvider.getLanguageName(userProfile?.language ?? 'en')}',
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const LanguageSettingsScreen(),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          const SizedBox(height: 16),
+
+          // Logout Button
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.logout, color: Colors.red),
+              title: const Text('Logout', style: TextStyle(color: Colors.red)),
+              onTap: () => _showLogoutConfirmation(context),
+            ),
+          ),
+        ],
       ),
     );
   }

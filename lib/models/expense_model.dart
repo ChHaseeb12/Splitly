@@ -1,22 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum ExpenseStatus { pending, settled, archived }
+
 enum SplitType { equal, unequal, percentage, shares }
 
 class ExpenseParticipant {
   final String userId;
   final double splitAmount;
 
-  ExpenseParticipant({
-    required this.userId,
-    required this.splitAmount,
-  });
+  ExpenseParticipant({required this.userId, required this.splitAmount});
 
   Map<String, dynamic> toJson() {
-    return {
-      'userId': userId,
-      'splitAmount': splitAmount,
-    };
+    return {'userId': userId, 'splitAmount': splitAmount};
   }
 
   factory ExpenseParticipant.fromJson(Map<String, dynamic> json) {
@@ -39,6 +34,8 @@ class ExpenseModel {
   final List<ExpenseParticipant> participants;
   final SplitType splitType;
   final ExpenseStatus status;
+  final List<String> attachments; // URLs to receipt images
+  final String? notes; // Detailed notes
   final DateTime createdAt;
   final DateTime updatedAt;
 
@@ -54,6 +51,8 @@ class ExpenseModel {
     required this.participants,
     this.splitType = SplitType.equal,
     this.status = ExpenseStatus.pending,
+    this.attachments = const [],
+    this.notes,
     required this.createdAt,
     required this.updatedAt,
   });
@@ -71,15 +70,17 @@ class ExpenseModel {
       'participants': participants.map((p) => p.toJson()).toList(),
       'splitType': splitType.toString().split('.').last,
       'status': status.toString().split('.').last,
+      'attachments': attachments,
+      'notes': notes,
       'createdAt': createdAt,
       'updatedAt': updatedAt,
     };
   }
 
   factory ExpenseModel.fromJson(Map<String, dynamic> json) {
-    var participantList = (json['participants'] as List<dynamic>?)
-            ?.map((p) =>
-                ExpenseParticipant.fromJson(p as Map<String, dynamic>))
+    var participantList =
+        (json['participants'] as List<dynamic>?)
+            ?.map((p) => ExpenseParticipant.fromJson(p as Map<String, dynamic>))
             .toList() ??
         [];
 
@@ -101,6 +102,8 @@ class ExpenseModel {
         (e) => e.toString().split('.').last == json['status'],
         orElse: () => ExpenseStatus.pending,
       ),
+      attachments: List<String>.from(json['attachments'] ?? []),
+      notes: json['notes'] as String?,
       createdAt: (json['createdAt'] as Timestamp).toDate(),
       updatedAt: (json['updatedAt'] as Timestamp).toDate(),
     );
@@ -118,6 +121,8 @@ class ExpenseModel {
     List<ExpenseParticipant>? participants,
     SplitType? splitType,
     ExpenseStatus? status,
+    List<String>? attachments,
+    String? notes,
     DateTime? createdAt,
     DateTime? updatedAt,
   }) {
@@ -133,6 +138,8 @@ class ExpenseModel {
       participants: participants ?? this.participants,
       splitType: splitType ?? this.splitType,
       status: status ?? this.status,
+      attachments: attachments ?? this.attachments,
+      notes: notes ?? this.notes,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
     );
