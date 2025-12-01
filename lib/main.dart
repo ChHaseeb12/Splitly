@@ -13,6 +13,7 @@ import 'package:splitly/providers/saved_split_provider.dart';
 import 'package:splitly/providers/currency_provider.dart';
 import 'package:splitly/providers/locale_provider.dart';
 import 'package:splitly/providers/sync_provider.dart';
+import 'package:splitly/providers/analytics_provider.dart';
 import 'package:splitly/services/local_storage_service.dart';
 import 'package:splitly/services/connectivity_service.dart';
 import 'package:splitly/services/sync_service.dart';
@@ -61,6 +62,7 @@ class MyApp extends StatelessWidget {
             localStorageService,
           )..initialize(),
         ),
+        ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
       ],
       child: Consumer<LocaleProvider>(
         builder: (context, localeProvider, child) {

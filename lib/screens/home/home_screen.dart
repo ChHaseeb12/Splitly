@@ -9,6 +9,7 @@ import '../groups/group_list_screen.dart';
 import '../settings/currency_settings_screen.dart';
 import '../settings/language_settings_screen.dart';
 import '../settings/sync_settings_screen.dart';
+import '../analytics/analytics_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -20,8 +21,8 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
-  final List<Widget> _screens = [
-    const DashboardScreen(),
+  List<Widget> get _screens => [
+    DashboardScreen(onNavigate: _onItemTapped),
     const FriendListScreen(),
     const GroupListScreen(),
     const ActivityScreen(),
@@ -61,7 +62,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
 // Dashboard Screen (Placeholder)
 class DashboardScreen extends StatelessWidget {
-  const DashboardScreen({super.key});
+  final Function(int)? onNavigate;
+
+  const DashboardScreen({super.key, this.onNavigate});
 
   @override
   Widget build(BuildContext context) {
@@ -102,20 +105,73 @@ class DashboardScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: Center(
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Icon(Icons.dashboard, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Dashboard',
-              style: TextStyle(fontSize: 24, color: Colors.grey[600]),
+            const Text(
+              'Quick Actions',
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
             ),
-            const SizedBox(height: 8),
-            Text(
-              'Coming in Phase 8',
-              style: TextStyle(color: Colors.grey[500]),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickActionCard(
+                    context,
+                    'Analytics',
+                    Icons.analytics,
+                    Colors.blue,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AnalyticsDashboardScreen(),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildQuickActionCard(
+                    context,
+                    'Add Expense',
+                    Icons.add_circle,
+                    Colors.green,
+                    () {
+                      // Navigate to add expense
+                    },
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Row(
+              children: [
+                Expanded(
+                  child: _buildQuickActionCard(
+                    context,
+                    'Balances',
+                    Icons.account_balance_wallet,
+                    Colors.orange,
+                    () {
+                      // Navigate to balances
+                    },
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: _buildQuickActionCard(
+                    context,
+                    'Settings',
+                    Icons.settings,
+                    Colors.purple,
+                    () {
+                      if (onNavigate != null) onNavigate!(4);
+                    },
+                  ),
+                ),
+              ],
             ),
           ],
         ),
@@ -142,6 +198,39 @@ class DashboardScreen extends StatelessWidget {
             child: const Text('Logout'),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildQuickActionCard(
+    BuildContext context,
+    String title,
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 2,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            children: [
+              Icon(icon, size: 40, color: color),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
