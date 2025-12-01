@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:splitly/providers/auth_provider.dart';
 import 'package:splitly/providers/locale_provider.dart';
+import 'package:splitly/providers/sync_provider.dart';
+import 'package:splitly/widgets/sync_status_indicator.dart';
 import '../friends/friend_list_screen.dart';
 import '../groups/group_list_screen.dart';
 import '../settings/currency_settings_screen.dart';
 import '../settings/language_settings_screen.dart';
+import '../settings/sync_settings_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -66,6 +69,7 @@ class DashboardScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Dashboard'),
         actions: [
+          const SyncStatusIndicator(),
           Padding(
             padding: const EdgeInsets.all(8.0),
             child: Center(
@@ -262,6 +266,35 @@ class ProfileScreen extends StatelessWidget {
                       context,
                       MaterialPageRoute(
                         builder: (context) => const LanguageSettingsScreen(),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+
+          // Sync & Offline Settings
+          Card(
+            child: Consumer<SyncProvider>(
+              builder: (context, syncProvider, _) {
+                return ListTile(
+                  leading: Icon(
+                    syncProvider.isOnline ? Icons.cloud_done : Icons.cloud_off,
+                    color: syncProvider.isOnline ? Colors.green : Colors.grey,
+                  ),
+                  title: const Text('Sync & Offline'),
+                  subtitle: Text(
+                    syncProvider.isOnline
+                        ? 'Last synced: ${syncProvider.getTimeSinceLastSync()}'
+                        : 'Offline mode',
+                  ),
+                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const SyncSettingsScreen(),
                       ),
                     );
                   },

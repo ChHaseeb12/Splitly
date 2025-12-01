@@ -12,12 +12,22 @@ import 'package:splitly/providers/recurring_expense_provider.dart';
 import 'package:splitly/providers/saved_split_provider.dart';
 import 'package:splitly/providers/currency_provider.dart';
 import 'package:splitly/providers/locale_provider.dart';
+import 'package:splitly/providers/sync_provider.dart';
+import 'package:splitly/services/local_storage_service.dart';
+import 'package:splitly/services/connectivity_service.dart';
+import 'package:splitly/services/sync_service.dart';
 import 'package:splitly/l10n/app_localizations.dart';
 import 'package:splitly/screens/auth/auth_gate.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Firebase
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Initialize local storage
+  await LocalStorageService.initialize();
+
   runApp(const MyApp());
 }
 
@@ -26,6 +36,11 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Create singleton instances for offline services
+    final localStorageService = LocalStorageService();
+    final connectivityService = ConnectivityService();
+    final syncService = SyncService(localStorageService, connectivityService);
+
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthProvider()),
@@ -38,6 +53,13 @@ class MyApp extends StatelessWidget {
         ChangeNotifierProvider(create: (_) => CurrencyProvider()),
         ChangeNotifierProvider(
           create: (_) => LocaleProvider()..initializeLocale(),
+        ),
+        ChangeNotifierProvider(
+          create: (_) => SyncProvider(
+            syncService,
+            connectivityService,
+            localStorageService,
+          )..initialize(),
         ),
       ],
       child: Consumer<LocaleProvider>(
