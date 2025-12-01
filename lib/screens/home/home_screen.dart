@@ -9,6 +9,7 @@ import '../groups/group_list_screen.dart';
 import '../settings/currency_settings_screen.dart';
 import '../settings/language_settings_screen.dart';
 import '../settings/sync_settings_screen.dart';
+import '../settings/theme_settings_screen.dart';
 import '../analytics/analytics_dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -387,6 +388,24 @@ class ProfileScreen extends StatelessWidget {
                       ),
                     );
                   },
+                );
+              },
+            ),
+          ),
+
+          // Theme Settings
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.palette),
+              title: const Text('Theme Settings'),
+              subtitle: const Text('Light, Dark, or System'),
+              trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const ThemeSettingsScreen(),
+                  ),
                 );
               },
             ),

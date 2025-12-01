@@ -14,6 +14,7 @@ import 'package:splitly/providers/currency_provider.dart';
 import 'package:splitly/providers/locale_provider.dart';
 import 'package:splitly/providers/sync_provider.dart';
 import 'package:splitly/providers/analytics_provider.dart';
+import 'package:splitly/providers/theme_provider.dart';
 import 'package:splitly/services/local_storage_service.dart';
 import 'package:splitly/services/connectivity_service.dart';
 import 'package:splitly/services/sync_service.dart';
@@ -63,21 +64,16 @@ class MyApp extends StatelessWidget {
           )..initialize(),
         ),
         ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
+        ChangeNotifierProvider(create: (_) => ThemeProvider()..initialize()),
       ],
-      child: Consumer<LocaleProvider>(
-        builder: (context, localeProvider, child) {
+      child: Consumer2<LocaleProvider, ThemeProvider>(
+        builder: (context, localeProvider, themeProvider, child) {
           return MaterialApp(
             debugShowCheckedModeBanner: false,
             title: 'Splitly',
-            theme: ThemeData(
-              primarySwatch: Colors.blue,
-              useMaterial3: true,
-              appBarTheme: const AppBarTheme(
-                elevation: 0,
-                backgroundColor: Colors.white,
-                foregroundColor: Colors.black,
-              ),
-            ),
+            theme: ThemeProvider.lightTheme,
+            darkTheme: ThemeProvider.darkTheme,
+            themeMode: themeProvider.themeMode,
             // Localization configuration
             locale: localeProvider.locale,
             supportedLocales: AppLocalizations.supportedLocales,
