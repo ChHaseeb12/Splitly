@@ -15,6 +15,9 @@ import 'package:splitly/providers/locale_provider.dart';
 import 'package:splitly/providers/sync_provider.dart';
 import 'package:splitly/providers/analytics_provider.dart';
 import 'package:splitly/providers/theme_provider.dart';
+import 'package:splitly/providers/notification_provider.dart';
+import 'package:splitly/providers/budget_provider.dart';
+import 'package:splitly/providers/comment_provider.dart';
 import 'package:splitly/services/local_storage_service.dart';
 import 'package:splitly/services/connectivity_service.dart';
 import 'package:splitly/services/sync_service.dart';
@@ -65,6 +68,9 @@ class MyApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(create: (_) => AnalyticsProvider()),
         ChangeNotifierProvider(create: (_) => ThemeProvider()..initialize()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
+        ChangeNotifierProvider(create: (_) => BudgetProvider()),
+        ChangeNotifierProvider(create: (_) => CommentProvider()),
       ],
       child: Consumer2<LocaleProvider, ThemeProvider>(
         builder: (context, localeProvider, themeProvider, child) {
