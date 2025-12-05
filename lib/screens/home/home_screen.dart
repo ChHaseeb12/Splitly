@@ -3,6 +3,8 @@ import 'package:provider/provider.dart';
 import 'package:splitly/providers/auth_provider.dart';
 import 'package:splitly/providers/locale_provider.dart';
 import 'package:splitly/providers/sync_provider.dart';
+import 'package:splitly/screens/auth/auth_gate.dart';
+import 'package:splitly/screens/auth/login_screen.dart';
 import 'package:splitly/widgets/sync_status_indicator.dart';
 import '../friends/friend_list_screen.dart';
 import '../groups/group_list_screen.dart';
@@ -192,9 +194,14 @@ class DashboardScreen extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              Navigator.pop(context);
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const AuthGate()),
+                  (route) => false,
+                );
+              }
             },
             child: const Text('Logout'),
           ),
@@ -438,9 +445,14 @@ class ProfileScreen extends StatelessWidget {
             child: const Text('Cancel'),
           ),
           TextButton(
-            onPressed: () {
-              context.read<AuthProvider>().logout();
-              Navigator.pop(context);
+            onPressed: () async {
+              await context.read<AuthProvider>().logout();
+              if (context.mounted) {
+                Navigator.of(context).pushAndRemoveUntil(
+                  MaterialPageRoute(builder: (context) => const AuthGate()),
+                  (route) => false,
+                );
+              }
             },
             child: const Text('Logout'),
           ),
