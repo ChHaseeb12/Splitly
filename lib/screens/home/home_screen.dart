@@ -4,7 +4,6 @@ import 'package:splitly/providers/auth_provider.dart';
 import 'package:splitly/providers/locale_provider.dart';
 import 'package:splitly/providers/sync_provider.dart';
 import 'package:splitly/screens/auth/auth_gate.dart';
-import 'package:splitly/screens/auth/login_screen.dart';
 import 'package:splitly/widgets/sync_status_indicator.dart';
 import '../friends/friend_list_screen.dart';
 import '../groups/group_list_screen.dart';
@@ -13,6 +12,8 @@ import '../settings/language_settings_screen.dart';
 import '../settings/sync_settings_screen.dart';
 import '../settings/theme_settings_screen.dart';
 import '../analytics/analytics_dashboard_screen.dart';
+import '../expenses/add_expense_screen.dart';
+import '../../providers/group_provider.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -141,9 +142,7 @@ class DashboardScreen extends StatelessWidget {
                     'Add Expense',
                     Icons.add_circle,
                     Colors.green,
-                    () {
-                      // Navigate to add expense
-                    },
+                    () => _showGroupSelector(context),
                   ),
                 ),
               ],
@@ -178,6 +177,60 @@ class DashboardScreen extends StatelessWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+
+  void _showGroupSelector(BuildContext context) {
+    final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+    final groups = groupProvider.groups;
+
+    if (groups.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please create a group first to add expenses'),
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Select Group'),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: groups.length,
+            itemBuilder: (context, index) {
+              final group = groups[index];
+              return ListTile(
+                leading: CircleAvatar(
+                  child: Text(group.name.substring(0, 1).toUpperCase()),
+                ),
+                title: Text(group.name),
+                subtitle: Text('${group.members.length} members'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          AddExpenseScreen(groupId: group.groupId),
+                    ),
+                  );
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
       ),
     );
   }
