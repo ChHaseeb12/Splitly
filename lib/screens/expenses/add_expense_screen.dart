@@ -4,12 +4,14 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../models/expense_model.dart';
 import '../../models/group_model.dart';
 import '../../models/user_model.dart';
+import '../../models/currency_model.dart';
 import '../../providers/expense_provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/group_provider.dart';
 import '../../widgets/my_button.dart';
 import '../../widgets/my_textfield.dart';
 import '../../widgets/currency_selector.dart';
+import '../../data/currencies.dart';
 
 class AddExpenseScreen extends StatefulWidget {
   final String groupId;
@@ -26,7 +28,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
   final _descriptionController = TextEditingController();
 
   String _selectedCategory = 'FOOD';
-  late String _selectedCurrency;
+  String _selectedCurrency = 'USD';
   SplitType _selectedSplitType = SplitType.equal;
   DateTime _selectedDate = DateTime.now();
   final List<Map<String, dynamic>> _participants = [];
@@ -77,6 +79,20 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     'SUBSCRIPTION',
     'OTHER',
   ];
+
+  // Helper method to get currency symbol
+  String _getCurrencySymbol(String currencyCode) {
+    final currencyData = CurrencyData.currencies.firstWhere(
+      (c) => c.code == currencyCode,
+      orElse: () => CurrencyModel(
+        code: currencyCode,
+        name: currencyCode,
+        symbol: currencyCode,
+        flag: '',
+      ),
+    );
+    return currencyData.symbol;
+  }
 
   @override
   void dispose() {
@@ -188,22 +204,78 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Split Preview'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Total Amount: \$${amount.toStringAsFixed(2)}'),
-            const SizedBox(height: 16),
-            Text(
-              'Split Type: ${_selectedSplitType.toString().split('.').last.toUpperCase()}',
-            ),
-            const SizedBox(height: 16),
-            const Text('Each person pays:'),
-            ..._participants.map(
-              (p) =>
-                  Text('${p['userId']}: \$${splitAmount.toStringAsFixed(2)}'),
-            ),
-          ],
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Total Amount: $_selectedCurrency ${amount.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 16,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'Split Type: ${_selectedSplitType.toString().split('.').last.toUpperCase()}',
+                style: const TextStyle(fontSize: 14, color: Colors.grey),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'Each person pays:',
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              ..._participants.map((p) {
+                final user = _groupMembers[p['userId']];
+                final userName = user?.displayName ?? 'Unknown User';
+
+                // Calculate amount based on split type
+                double userAmount;
+                if (_selectedSplitType == SplitType.equal) {
+                  userAmount = splitAmount;
+                } else if (_selectedSplitType == SplitType.unequal) {
+                  userAmount = p['amount'] ?? splitAmount;
+                } else if (_selectedSplitType == SplitType.percentage) {
+                  final percentage =
+                      p['percentage'] ?? (100.0 / _participants.length);
+                  userAmount = amount * (percentage / 100);
+                } else {
+                  userAmount = splitAmount;
+                }
+
+                return Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 4.0),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        child: Text(
+                          userName.substring(0, 1).toUpperCase(),
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          userName,
+                          style: const TextStyle(fontSize: 14),
+                        ),
+                      ),
+                      Text(
+                        '$_selectedCurrency ${userAmount.toStringAsFixed(2)}',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+              }),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -254,7 +326,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Total: \$${totalAmount.toStringAsFixed(2)}'),
+                Text(
+                  'Total: ${_getCurrencySymbol(_selectedCurrency)}${totalAmount.toStringAsFixed(2)}',
+                ),
                 const SizedBox(height: 16),
                 ...List.generate(_participants.length, (index) {
                   final user = _groupMembers[_participants[index]['userId']];
@@ -266,7 +340,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                       decoration: InputDecoration(
                         labelText: user?.displayName ?? 'Unknown',
                         border: const OutlineInputBorder(),
-                        prefixText: '\$',
+                        prefixText: '${_getCurrencySymbol(_selectedCurrency)} ',
                       ),
                     ),
                   );
@@ -293,7 +367,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      'Amounts must sum to \$${totalAmount.toStringAsFixed(2)}. Current sum: \$${sum.toStringAsFixed(2)}',
+                      'Amounts must sum to ${_getCurrencySymbol(_selectedCurrency)}${totalAmount.toStringAsFixed(2)}. Current sum: ${_getCurrencySymbol(_selectedCurrency)}${sum.toStringAsFixed(2)}',
                     ),
                   ),
                 );
@@ -324,7 +398,9 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text('Total: \$${totalAmount.toStringAsFixed(2)}'),
+                Text(
+                  'Total: ${_getCurrencySymbol(_selectedCurrency)}${totalAmount.toStringAsFixed(2)}',
+                ),
                 const SizedBox(height: 16),
                 ...List.generate(_participants.length, (index) {
                   final user = _groupMembers[_participants[index]['userId']];

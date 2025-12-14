@@ -205,10 +205,14 @@ class _AddFriendScreenState extends State<AddFriendScreen> {
                                   ? IconButton(
                                       icon: const Icon(Icons.person_add),
                                       onPressed: () async {
+                                        final currentUser =
+                                            authProvider.currentUser!;
                                         final success = await friendProvider
                                             .sendFriendRequest(
                                               currentUserId,
+                                              currentUser.displayName ?? 'User',
                                               user.uid,
+                                              user.displayName,
                                             );
 
                                         if (success && context.mounted) {

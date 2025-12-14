@@ -97,35 +97,49 @@ class CommentProvider with ChangeNotifier {
   }
 
   // Load group activity
-  void loadGroupActivity(String groupId) {
-    _commentService
-        .getGroupActivity(groupId)
-        .listen(
-          (activities) {
-            _activities = activities;
-            notifyListeners();
-          },
-          onError: (error) {
-            _error = error.toString();
-            notifyListeners();
-          },
-        );
+  Future<void> loadGroupActivity(String groupId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      _activities = await _commentService.getGroupActivity(groupId);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
   }
 
   // Load user activity
-  void loadUserActivity(String userId) {
-    _commentService
-        .getUserActivity(userId)
-        .listen(
-          (activities) {
-            _activities = activities;
-            notifyListeners();
-          },
-          onError: (error) {
-            _error = error.toString();
-            notifyListeners();
-          },
-        );
+  Future<void> loadUserActivity(String userId) async {
+    try {
+      _isLoading = true;
+      notifyListeners();
+
+      _activities = await _commentService.getUserActivity(userId);
+
+      _isLoading = false;
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      _isLoading = false;
+      notifyListeners();
+    }
+  }
+
+  // Clear session activities
+  Future<void> clearSessionActivities() async {
+    try {
+      await _commentService.clearSessionActivities();
+      _activities = [];
+      notifyListeners();
+    } catch (e) {
+      _error = e.toString();
+      notifyListeners();
+    }
   }
 
   // Create activity

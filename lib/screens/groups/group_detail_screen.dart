@@ -23,13 +23,30 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   @override
   void initState() {
     super.initState();
+    // Load expenses for this specific group when screen initializes
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final expenseProvider = Provider.of<ExpenseProvider>(
         context,
         listen: false,
       );
+      // Clear any previous expenses and load only this group's expenses
       expenseProvider.loadExpensesByGroup(widget.group.groupId);
     });
+  }
+
+  @override
+  void didUpdateWidget(GroupDetailScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Reload expenses if group changes
+    if (oldWidget.group.groupId != widget.group.groupId) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final expenseProvider = Provider.of<ExpenseProvider>(
+          context,
+          listen: false,
+        );
+        expenseProvider.loadExpensesByGroup(widget.group.groupId);
+      });
+    }
   }
 
   Future<UserModel?> _getUserData(String userId) async {
@@ -415,7 +432,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
   }
 
   Widget _buildActivityTab(ExpenseProvider expenseProvider) {
-    if (expenseProvider.expenses.isEmpty) {
+    // Filter expenses to only show those belonging to this group
+    final groupExpenses = expenseProvider.expenses
+        .where((expense) => expense.groupId == widget.group.groupId)
+        .toList();
+
+    if (groupExpenses.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -432,9 +454,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
     }
 
     return ListView.builder(
-      itemCount: expenseProvider.expenses.length,
+      itemCount: groupExpenses.length,
       itemBuilder: (context, index) {
-        final expense = expenseProvider.expenses[index];
+        final expense = groupExpenses[index];
 
         return FutureBuilder<UserModel?>(
           future: _getUserData(expense.payerId),

@@ -193,8 +193,6 @@ class ExpenseCard extends StatelessWidget {
         return Icons.format_list_numbered;
       case SplitType.percentage:
         return Icons.percent;
-      case SplitType.shares:
-        return Icons.pie_chart;
     }
   }
 
@@ -206,8 +204,6 @@ class ExpenseCard extends StatelessWidget {
         return 'Unequal split';
       case SplitType.percentage:
         return 'Percentage split';
-      case SplitType.shares:
-        return 'Shares split';
     }
   }
 }

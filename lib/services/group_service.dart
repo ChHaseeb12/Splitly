@@ -1,14 +1,18 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/group_model.dart';
+import '../models/comment_model.dart';
+import 'comment_service.dart';
 
 class GroupService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CommentService _commentService = CommentService();
 
   // Create group (creator automatically admin)
   Future<String> createGroup({
     required String name,
     String? description,
     required String createdBy,
+    required String creatorName,
     String currency = 'USD',
     bool simplificationEnabled = true,
     bool notificationsEnabled = true,
@@ -31,6 +35,20 @@ class GroupService {
       );
 
       await _firestore.collection('groups').doc(groupId).set(group.toJson());
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${groupId}_created_${now.millisecondsSinceEpoch}',
+        userId: createdBy,
+        userName: creatorName,
+        type: ActivityType.GROUP_CREATED,
+        description: 'created group "$name"',
+        groupId: groupId,
+        data: {'groupName': name},
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
+
       return groupId;
     } catch (e) {
       throw Exception('Failed to create group: $e');
@@ -38,7 +56,12 @@ class GroupService {
   }
 
   // Add member to group
-  Future<void> addMember(String groupId, String userId) async {
+  Future<void> addMember(
+    String groupId,
+    String userId,
+    String userName,
+    String addedByName,
+  ) async {
     try {
       final groupDoc = await _firestore.collection('groups').doc(groupId).get();
       if (!groupDoc.exists) {
@@ -52,15 +75,34 @@ class GroupService {
         throw Exception('User is already a member');
       }
 
+      final now = DateTime.now();
       final updatedMembers = [
         ...group.members,
-        GroupMember(userId: userId, joinDate: DateTime.now()),
+        GroupMember(userId: userId, joinDate: now),
       ];
 
       await _firestore.collection('groups').doc(groupId).update({
         'members': updatedMembers.map((m) => m.toJson()).toList(),
-        'updatedAt': DateTime.now(),
+        'updatedAt': now,
       });
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${groupId}_member_added_${now.millisecondsSinceEpoch}',
+        userId: group.createdBy,
+        userName: addedByName,
+        type: ActivityType.MEMBER_ADDED,
+        description: 'added $userName to ${group.name}',
+        groupId: groupId,
+        data: {
+          'groupName': group.name,
+          'newMemberId': userId,
+          'newMemberName': userName,
+          'participants': [group.createdBy, userId],
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to add member: $e');
     }

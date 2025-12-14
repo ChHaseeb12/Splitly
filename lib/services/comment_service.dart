@@ -1,8 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import '../models/comment_model.dart';
 
 class CommentService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  static const String _activitiesBoxName = 'session_activities';
 
   // Add comment to expense
   Future<void> addComment(CommentModel comment) async {
@@ -71,52 +73,80 @@ class CommentService {
     }
   }
 
-  // Create activity feed item
+  // Create activity feed item (session-based, stored locally)
   Future<void> createActivity(ActivityFeedItem activity) async {
     try {
-      await _firestore
-          .collection('activities')
-          .doc(activity.id)
-          .set(activity.toJson());
+      // Store in local Hive box for session-based activities
+      final box = await Hive.openBox(_activitiesBoxName);
+      await box.put(activity.id, activity.toJson());
     } catch (e) {
       print('Error creating activity: $e');
       rethrow;
     }
   }
 
-  // Get activity feed for group
-  Stream<List<ActivityFeedItem>> getGroupActivity(String groupId) {
-    return _firestore
-        .collection('activities')
-        .where('groupId', isEqualTo: groupId)
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(
-                (doc) =>
-                    ActivityFeedItem.fromJson({...doc.data(), 'id': doc.id}),
-              )
-              .toList(),
-        );
+  // Clear all session activities (called on app close)
+  Future<void> clearSessionActivities() async {
+    try {
+      final box = await Hive.openBox(_activitiesBoxName);
+      await box.clear();
+    } catch (e) {
+      print('Error clearing session activities: $e');
+    }
   }
 
-  // Get activity feed for user
-  Stream<List<ActivityFeedItem>> getUserActivity(String userId) {
-    return _firestore
-        .collection('activities')
-        .where('data.participants', arrayContains: userId)
-        .orderBy('createdAt', descending: true)
-        .limit(50)
-        .snapshots()
-        .map(
-          (snapshot) => snapshot.docs
-              .map(
-                (doc) =>
-                    ActivityFeedItem.fromJson({...doc.data(), 'id': doc.id}),
-              )
-              .toList(),
+  // Get activity feed for group (from local storage)
+  Future<List<ActivityFeedItem>> getGroupActivity(String groupId) async {
+    try {
+      final box = await Hive.openBox(_activitiesBoxName);
+      final activities = <ActivityFeedItem>[];
+
+      for (var key in box.keys) {
+        final data = box.get(key) as Map<dynamic, dynamic>;
+        final activity = ActivityFeedItem.fromJson(
+          Map<String, dynamic>.from(data),
         );
+        if (activity.groupId == groupId) {
+          activities.add(activity);
+        }
+      }
+
+      // Sort by createdAt descending
+      activities.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return activities;
+    } catch (e) {
+      print('Error getting group activity: $e');
+      return [];
+    }
+  }
+
+  // Get activity feed for user (from local storage)
+  Future<List<ActivityFeedItem>> getUserActivity(String userId) async {
+    try {
+      final box = await Hive.openBox(_activitiesBoxName);
+      final activities = <ActivityFeedItem>[];
+
+      for (var key in box.keys) {
+        final data = box.get(key) as Map<dynamic, dynamic>;
+        final activity = ActivityFeedItem.fromJson(
+          Map<String, dynamic>.from(data),
+        );
+
+        // Include activities where user is involved
+        if (activity.userId == userId ||
+            (activity.data['participants'] as List?)?.contains(userId) ==
+                true ||
+            activity.data['targetUserId'] == userId) {
+          activities.add(activity);
+        }
+      }
+
+      // Sort by createdAt descending
+      activities.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      return activities.take(50).toList();
+    } catch (e) {
+      print('Error getting user activity: $e');
+      return [];
+    }
   }
 }

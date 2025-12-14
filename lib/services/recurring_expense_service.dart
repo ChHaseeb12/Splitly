@@ -150,8 +150,6 @@ class RecurringExpenseService {
         return SplitType.unequal;
       case 'PERCENTAGE':
         return SplitType.percentage;
-      case 'SHARES':
-        return SplitType.shares;
       default:
         return SplitType.equal;
     }

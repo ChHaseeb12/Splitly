@@ -33,7 +33,6 @@ class _NotificationSettingsScreenState
 
   @override
   Widget build(BuildContext context) {
-    final authProvider = Provider.of<AuthProvider>(context);
     final notificationProvider = Provider.of<NotificationProvider>(context);
     final preferences = notificationProvider.preferences;
 

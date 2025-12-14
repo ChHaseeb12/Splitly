@@ -18,6 +18,7 @@ class GroupProvider with ChangeNotifier {
     required String name,
     String? description,
     required String createdBy,
+    required String creatorName,
     String currency = 'USD',
     bool simplificationEnabled = true,
     bool notificationsEnabled = true,
@@ -31,6 +32,7 @@ class GroupProvider with ChangeNotifier {
         name: name,
         description: description,
         createdBy: createdBy,
+        creatorName: creatorName,
         currency: currency,
         simplificationEnabled: simplificationEnabled,
         notificationsEnabled: notificationsEnabled,
@@ -48,13 +50,18 @@ class GroupProvider with ChangeNotifier {
   }
 
   // Add member to group
-  Future<bool> addMember(String groupId, String userId) async {
+  Future<bool> addMember(
+    String groupId,
+    String userId,
+    String userName,
+    String addedByName,
+  ) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      await _groupService.addMember(groupId, userId);
+      await _groupService.addMember(groupId, userId, userName, addedByName);
 
       _isLoading = false;
       notifyListeners();

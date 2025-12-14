@@ -36,14 +36,35 @@ class AnalyticsService {
           )
           .toList();
 
+      // Get all existing group IDs to filter out deleted groups
+      final expenseGroupIds = expenses
+          .where((e) => e.groupId != null)
+          .map((e) => e.groupId!)
+          .toSet()
+          .toList();
+
+      final existingGroupIds = <String>{};
+      if (expenseGroupIds.isNotEmpty) {
+        final groupDocs = await _firestore
+            .collection('groups')
+            .where(FieldPath.documentId, whereIn: expenseGroupIds)
+            .get();
+        existingGroupIds.addAll(groupDocs.docs.map((doc) => doc.id));
+      }
+
+      // Filter out expenses from deleted groups
+      final validExpenses = expenses.where((expense) {
+        if (expense.groupId == null) return true;
+        return existingGroupIds.contains(expense.groupId);
+      }).toList();
+
       // Calculate totals
-      double totalSpent = 0;
-      double totalOwed = 0;
-      double totalLent = 0;
+      double totalSpent = 0; // Total amount user paid
+      int expensesCreated = 0; // Count of expenses created by user
       Map<String, double> categoryBreakdown = {};
       Map<String, double> participantBreakdown = {};
 
-      for (var expense in expenses) {
+      for (var expense in validExpenses) {
         // Category breakdown
         categoryBreakdown[expense.category] =
             (categoryBreakdown[expense.category] ?? 0) + expense.amount;
@@ -55,28 +76,43 @@ class AnalyticsService {
               participant.splitAmount;
         }
 
-        // Calculate user's share
-        final userParticipant = expense.participants.firstWhere(
-          (p) => p.userId == userId,
-          orElse: () => ExpenseParticipant(userId: userId, splitAmount: 0),
-        );
-        final userAmount = userParticipant.splitAmount;
-
         if (expense.payerId == userId) {
-          // User paid
+          // User paid - this is what they actually spent
           totalSpent += expense.amount;
-          totalLent += expense.amount - userAmount;
-        } else {
-          // Someone else paid
-          totalOwed += userAmount;
+          expensesCreated++;
         }
+      }
+
+      // Get current debt balances from debts collection
+      final owedDebts = await _firestore
+          .collection('debts')
+          .where('fromUserId', isEqualTo: userId)
+          .get();
+
+      final lentDebts = await _firestore
+          .collection('debts')
+          .where('toUserId', isEqualTo: userId)
+          .get();
+
+      double currentOwed = 0;
+      double currentLent = 0;
+
+      for (var doc in owedDebts.docs) {
+        final debt = DebtModel.fromJson({...doc.data(), 'debtId': doc.id});
+        currentOwed += debt.amount;
+      }
+
+      for (var doc in lentDebts.docs) {
+        final debt = DebtModel.fromJson({...doc.data(), 'debtId': doc.id});
+        currentLent += debt.amount;
       }
 
       return SpendingSummary(
         totalSpent: totalSpent,
-        totalOwed: totalOwed,
-        totalLent: totalLent,
-        expenseCount: expenses.length,
+        totalOwed: currentOwed, // Use current debt balance
+        totalLent: currentLent, // Use current debt balance
+        expenseCount: validExpenses.length,
+        expensesCreated: expensesCreated,
         startDate: startDate,
         endDate: endDate,
         categoryBreakdown: categoryBreakdown,
@@ -89,6 +125,7 @@ class AnalyticsService {
         totalOwed: 0,
         totalLent: 0,
         expenseCount: 0,
+        expensesCreated: 0,
         startDate: startDate,
         endDate: endDate,
         categoryBreakdown: {},
@@ -114,11 +151,60 @@ class AnalyticsService {
     final total = summary.categoryBreakdown.values.fold(0.0, (a, b) => a + b);
     if (total == 0) return [];
 
+    // Get expenses to count per category
+    Query query = _firestore
+        .collection('expenses')
+        .where('participants', arrayContains: userId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
+        .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
+
+    if (groupId != null) {
+      query = query.where('groupId', isEqualTo: groupId);
+    }
+
+    final snapshot = await query.get();
+    final expenses = snapshot.docs
+        .map(
+          (doc) => ExpenseModel.fromJson({
+            ...doc.data() as Map<String, dynamic>,
+            'expenseId': doc.id,
+          }),
+        )
+        .toList();
+
+    // Filter out deleted groups
+    final expenseGroupIds = expenses
+        .where((e) => e.groupId != null)
+        .map((e) => e.groupId!)
+        .toSet()
+        .toList();
+
+    final existingGroupIds = <String>{};
+    if (expenseGroupIds.isNotEmpty) {
+      final groupDocs = await _firestore
+          .collection('groups')
+          .where(FieldPath.documentId, whereIn: expenseGroupIds)
+          .get();
+      existingGroupIds.addAll(groupDocs.docs.map((doc) => doc.id));
+    }
+
+    final validExpenses = expenses.where((expense) {
+      if (expense.groupId == null) return true;
+      return existingGroupIds.contains(expense.groupId);
+    }).toList();
+
+    // Count expenses per category
+    Map<String, int> categoryCount = {};
+    for (var expense in validExpenses) {
+      categoryCount[expense.category] =
+          (categoryCount[expense.category] ?? 0) + 1;
+    }
+
     return summary.categoryBreakdown.entries.map((entry) {
       return CategorySpending(
         category: entry.key,
         amount: entry.value,
-        count: 0, // TODO: Calculate count per category
+        count: categoryCount[entry.key] ?? 0,
         percentage: (entry.value / total) * 100,
       );
     }).toList()..sort((a, b) => b.amount.compareTo(a.amount));
@@ -153,20 +239,41 @@ class AnalyticsService {
           )
           .toList();
 
+      // Filter out expenses from deleted groups
+      final expenseGroupIds = expenses
+          .where((e) => e.groupId != null)
+          .map((e) => e.groupId!)
+          .toSet()
+          .toList();
+      
+      final existingGroupIds = <String>{};
+      if (expenseGroupIds.isNotEmpty) {
+        final groupDocs = await _firestore
+            .collection('groups')
+            .where(FieldPath.documentId, whereIn: expenseGroupIds)
+            .get();
+        existingGroupIds.addAll(groupDocs.docs.map((doc) => doc.id));
+      }
+
+      final validExpenses = expenses.where((expense) {
+        if (expense.groupId == null) return true;
+        return existingGroupIds.contains(expense.groupId);
+      }).toList();
+
       // Group by day
       Map<String, List<ExpenseModel>> expensesByDay = {};
-      for (var expense in expenses) {
+      for (var expense in validExpenses) {
         final dateKey =
             '${expense.date.year}-${expense.date.month}-${expense.date.day}';
         expensesByDay[dateKey] = [...(expensesByDay[dateKey] ?? []), expense];
       }
 
       // Create trend points
-      List<SpendingTrendPoint> points = [];
+      final trendPoints = <SpendingTrendPoint>[];
       for (var entry in expensesByDay.entries) {
         final date = entry.value.first.date;
-        final amount = entry.value.fold(0.0, (sum, e) => sum + e.amount);
-        points.add(
+        final amount = entry.value.fold(0.0, (total, e) => total + e.amount);
+        trendPoints.add(
           SpendingTrendPoint(
             date: date,
             amount: amount,
@@ -175,7 +282,7 @@ class AnalyticsService {
         );
       }
 
-      return points..sort((a, b) => a.date.compareTo(b.date));
+      return trendPoints..sort((a, b) => a.date.compareTo(b.date));
     } catch (e) {
       print('Error getting spending trend: $e');
       return [];

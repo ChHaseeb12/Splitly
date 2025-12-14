@@ -1,9 +1,12 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/debt_model.dart';
 import '../models/expense_model.dart';
+import '../models/comment_model.dart';
+import 'comment_service.dart';
 
 class BalanceService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CommentService _commentService = CommentService();
 
   // Calculate net balance between two users
   Future<double> calculateNetBalance({
@@ -218,7 +221,9 @@ class BalanceService {
   // Settle debt between two users
   Future<void> settleDebt({
     required String fromUserId,
+    required String fromUserName,
     required String toUserId,
+    required String toUserName,
     required double amount,
     required String currency,
   }) async {
@@ -237,6 +242,7 @@ class BalanceService {
 
       final debtDoc = debtSnapshot.docs.first;
       final debt = DebtModel.fromJson(debtDoc.data());
+      final now = DateTime.now();
 
       if (amount >= debt.amount) {
         // Fully settled, delete debt
@@ -245,7 +251,7 @@ class BalanceService {
         // Partially settled, update amount
         await debtDoc.reference.update({
           'amount': debt.amount - amount,
-          'updatedAt': DateTime.now(),
+          'updatedAt': now,
         });
       }
 
@@ -257,6 +263,25 @@ class BalanceService {
         currency: currency,
         debtId: debt.debtId,
       );
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${debt.debtId}_settled_${now.millisecondsSinceEpoch}',
+        userId: fromUserId,
+        userName: fromUserName,
+        type: ActivityType.SETTLEMENT_MADE,
+        description:
+            'paid $currency ${amount.toStringAsFixed(2)} to $toUserName',
+        data: {
+          'amount': amount,
+          'currency': currency,
+          'toUserId': toUserId,
+          'toUserName': toUserName,
+          'participants': [fromUserId, toUserId],
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to settle debt: $e');
     }

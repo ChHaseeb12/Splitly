@@ -23,14 +23,21 @@ class FriendProvider with ChangeNotifier {
   // Send friend request
   Future<bool> sendFriendRequest(
     String currentUserId,
+    String currentUserName,
     String targetUserId,
+    String targetUserName,
   ) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      await _friendService.sendFriendRequest(currentUserId, targetUserId);
+      await _friendService.sendFriendRequest(
+        currentUserId,
+        currentUserName,
+        targetUserId,
+        targetUserName,
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -44,13 +51,25 @@ class FriendProvider with ChangeNotifier {
   }
 
   // Accept friend request
-  Future<bool> acceptFriendRequest(String friendId) async {
+  Future<bool> acceptFriendRequest(
+    String friendId,
+    String accepterUserId,
+    String accepterUserName,
+    String requesterUserId,
+    String requesterUserName,
+  ) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      await _friendService.acceptFriendRequest(friendId);
+      await _friendService.acceptFriendRequest(
+        friendId,
+        accepterUserId,
+        accepterUserName,
+        requesterUserId,
+        requesterUserName,
+      );
 
       _isLoading = false;
       notifyListeners();

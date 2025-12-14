@@ -1,14 +1,19 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/friend_model.dart';
 import '../models/user_model.dart';
+import '../models/comment_model.dart';
+import 'comment_service.dart';
 
 class FriendService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CommentService _commentService = CommentService();
 
   // Send friend request
   Future<void> sendFriendRequest(
     String currentUserId,
+    String currentUserName,
     String targetUserId,
+    String targetUserName,
   ) async {
     try {
       // Check if friendship already exists
@@ -23,26 +28,66 @@ class FriendService {
       }
 
       final friendId = _firestore.collection('friends').doc().id;
+      final now = DateTime.now();
       final friend = FriendModel(
         friendId: friendId,
         userId1: currentUserId,
         userId2: targetUserId,
         status: FriendStatus.pending,
-        createdAt: DateTime.now(),
+        createdAt: now,
       );
 
       await _firestore.collection('friends').doc(friendId).set(friend.toJson());
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${friendId}_request_sent_${now.millisecondsSinceEpoch}',
+        userId: currentUserId,
+        userName: currentUserName,
+        type: ActivityType.FRIEND_REQUEST_SENT,
+        description: 'sent friend request to $targetUserName',
+        data: {
+          'targetUserId': targetUserId,
+          'targetUserName': targetUserName,
+          'participants': [currentUserId, targetUserId],
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to send friend request: $e');
     }
   }
 
   // Accept friend request
-  Future<void> acceptFriendRequest(String friendId) async {
+  Future<void> acceptFriendRequest(
+    String friendId,
+    String accepterUserId,
+    String accepterUserName,
+    String requesterUserId,
+    String requesterUserName,
+  ) async {
     try {
+      final now = DateTime.now();
       await _firestore.collection('friends').doc(friendId).update({
         'status': FriendStatus.accepted.toString().split('.').last,
       });
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${friendId}_request_accepted_${now.millisecondsSinceEpoch}',
+        userId: accepterUserId,
+        userName: accepterUserName,
+        type: ActivityType.FRIEND_REQUEST_ACCEPTED,
+        description: 'accepted friend request from $requesterUserName',
+        data: {
+          'targetUserId': requesterUserId,
+          'targetUserName': requesterUserName,
+          'participants': [accepterUserId, requesterUserId],
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to accept friend request: $e');
     }

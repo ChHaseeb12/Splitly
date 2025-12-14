@@ -198,13 +198,8 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
               provider.selectedPeriod.displayName,
               style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
             ),
-            const Spacer(),
-            TextButton(
-              onPressed: () {
-                // TODO: Show date range picker for custom period
-              },
-              child: const Text('Custom'),
-            ),
+            const Spacer()
+            
           ],
         ),
       ),

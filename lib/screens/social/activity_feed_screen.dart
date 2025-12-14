@@ -128,11 +128,16 @@ class _ActivityCard extends StatelessWidget {
       case ActivityType.EXPENSE_DELETED:
         return Icons.delete;
       case ActivityType.PAYMENT_MADE:
+      case ActivityType.SETTLEMENT_MADE:
         return Icons.payment;
       case ActivityType.COMMENT_ADDED:
         return Icons.comment;
-      case ActivityType.FRIEND_JOINED:
+      case ActivityType.MEMBER_ADDED:
         return Icons.person_add;
+      case ActivityType.FRIEND_REQUEST_SENT:
+        return Icons.send;
+      case ActivityType.FRIEND_REQUEST_ACCEPTED:
+        return Icons.check_circle;
       case ActivityType.GROUP_CREATED:
         return Icons.group_add;
       default:
@@ -149,11 +154,15 @@ class _ActivityCard extends StatelessWidget {
       case ActivityType.EXPENSE_DELETED:
         return AppColors.error;
       case ActivityType.PAYMENT_MADE:
+      case ActivityType.SETTLEMENT_MADE:
         return AppColors.success;
       case ActivityType.COMMENT_ADDED:
         return AppColors.info;
-      case ActivityType.FRIEND_JOINED:
+      case ActivityType.MEMBER_ADDED:
+      case ActivityType.FRIEND_REQUEST_ACCEPTED:
         return AppColors.success;
+      case ActivityType.FRIEND_REQUEST_SENT:
+        return AppColors.info;
       case ActivityType.GROUP_CREATED:
         return AppColors.primary;
       default:

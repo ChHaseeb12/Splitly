@@ -24,7 +24,7 @@ class SpendingSummaryCard extends StatelessWidget {
               'Total Spent',
               summary.totalSpent,
               Colors.blue,
-              Icons.shopping_cart,
+              Icons.account_balance_wallet,
             ),
             const Divider(),
             _buildSummaryRow(
@@ -53,7 +53,11 @@ class SpendingSummaryCard extends StatelessWidget {
               children: [
                 Row(
                   children: [
-                    const Icon(Icons.receipt, size: 20, color: Colors.grey),
+                    const Icon(
+                      Icons.receipt_long,
+                      size: 20,
+                      color: Colors.grey,
+                    ),
                     const SizedBox(width: 8),
                     const Text('Total Expenses'),
                   ],
@@ -67,6 +71,32 @@ class SpendingSummaryCard extends StatelessWidget {
                 ),
               ],
             ),
+            if (summary.expensesCreated > 0) ...[
+              const Divider(),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.add_circle_outline,
+                        size: 20,
+                        color: Colors.grey,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text('Expenses Created'),
+                    ],
+                  ),
+                  Text(
+                    '${summary.expensesCreated}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),

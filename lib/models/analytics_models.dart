@@ -7,6 +7,7 @@ class SpendingSummary {
   final double totalOwed;
   final double totalLent;
   final int expenseCount;
+  final int expensesCreated; // Number of expenses created by user
   final DateTime startDate;
   final DateTime endDate;
   final Map<String, double> categoryBreakdown; // category -> amount
@@ -17,6 +18,7 @@ class SpendingSummary {
     required this.totalOwed,
     required this.totalLent,
     required this.expenseCount,
+    this.expensesCreated = 0,
     required this.startDate,
     required this.endDate,
     required this.categoryBreakdown,

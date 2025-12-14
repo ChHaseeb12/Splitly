@@ -16,17 +16,9 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  late String _selectedCurrency;
+  String _selectedCurrency = 'USD';
   bool _simplificationEnabled = true;
   bool _notificationsEnabled = true;
-
-  @override
-  void initState() {
-    super.initState();
-    // Initialize with user's default currency
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    _selectedCurrency = authProvider.userProfile?.currency ?? 'USD';
-  }
 
   final List<String> _currencies = [
     'USD',
@@ -38,6 +30,20 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
     'AUD',
     'CNY',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with user's default currency
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final userCurrency = authProvider.userProfile?.currency ?? 'USD';
+
+    // Ensure the user's currency is in the list
+    if (!_currencies.contains(userCurrency)) {
+      _currencies.add(userCurrency);
+    }
+    _selectedCurrency = userCurrency;
+  }
 
   @override
   void dispose() {
@@ -60,12 +66,14 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
       return;
     }
 
+    final currentUser = authProvider.currentUser!;
     final groupId = await groupProvider.createGroup(
       name: _nameController.text.trim(),
       description: _descriptionController.text.trim().isEmpty
           ? null
           : _descriptionController.text.trim(),
-      createdBy: authProvider.currentUser!.uid,
+      createdBy: currentUser.uid,
+      creatorName: currentUser.displayName ?? 'User',
       currency: _selectedCurrency,
       simplificationEnabled: _simplificationEnabled,
       notificationsEnabled: _notificationsEnabled,

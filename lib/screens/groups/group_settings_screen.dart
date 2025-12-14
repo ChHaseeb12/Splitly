@@ -24,17 +24,7 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
   late String _selectedCurrency;
   late bool _simplificationEnabled;
   late bool _notificationsEnabled;
-
-  final List<String> _currencies = [
-    'USD',
-    'EUR',
-    'GBP',
-    'INR',
-    'JPY',
-    'CAD',
-    'AUD',
-    'CNY',
-  ];
+  late List<String> _currencies;
 
   @override
   void initState() {
@@ -43,6 +33,15 @@ class _GroupSettingsScreenState extends State<GroupSettingsScreen> {
     _descriptionController = TextEditingController(
       text: widget.group.description ?? '',
     );
+
+    // Initialize currencies list
+    _currencies = ['USD', 'EUR', 'GBP', 'INR', 'JPY', 'CAD', 'AUD', 'CNY'];
+
+    // Ensure the group's currency is in the list
+    if (!_currencies.contains(widget.group.currency)) {
+      _currencies.add(widget.group.currency);
+    }
+
     _selectedCurrency = widget.group.currency;
     _simplificationEnabled = widget.group.simplificationEnabled;
     _notificationsEnabled = widget.group.notificationsEnabled;

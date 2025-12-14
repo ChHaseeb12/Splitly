@@ -125,8 +125,19 @@ class _FriendRequestsScreenState extends State<FriendRequestsScreen> {
                     IconButton(
                       icon: const Icon(Icons.check, color: Colors.green),
                       onPressed: () async {
+                        final authProvider = Provider.of<AuthProvider>(
+                          context,
+                          listen: false,
+                        );
+                        final currentUser = authProvider.currentUser!;
                         final success = await friendProvider
-                            .acceptFriendRequest(request.friendId);
+                            .acceptFriendRequest(
+                              request.friendId,
+                              currentUser.uid,
+                              currentUser.displayName ?? 'User',
+                              user.uid,
+                              user.displayName,
+                            );
                         if (success && context.mounted) {
                           ScaffoldMessenger.of(context).showSnackBar(
                             const SnackBar(

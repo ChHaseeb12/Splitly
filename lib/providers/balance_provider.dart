@@ -110,7 +110,9 @@ class BalanceProvider with ChangeNotifier {
   // Settle debt
   Future<bool> settleDebt({
     required String fromUserId,
+    required String fromUserName,
     required String toUserId,
+    required String toUserName,
     required double amount,
     required String currency,
   }) async {
@@ -121,7 +123,9 @@ class BalanceProvider with ChangeNotifier {
 
       await _balanceService.settleDebt(
         fromUserId: fromUserId,
+        fromUserName: fromUserName,
         toUserId: toUserId,
+        toUserName: toUserName,
         amount: amount,
         currency: currency,
       );

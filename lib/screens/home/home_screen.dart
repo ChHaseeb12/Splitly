@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:splitly/providers/auth_provider.dart';
-import 'package:splitly/providers/locale_provider.dart';
 import 'package:splitly/providers/sync_provider.dart';
 import 'package:splitly/screens/auth/auth_gate.dart';
 import 'package:splitly/widgets/sync_status_indicator.dart';
 import '../friends/friend_list_screen.dart';
 import '../groups/group_list_screen.dart';
 import '../settings/currency_settings_screen.dart';
-import '../settings/language_settings_screen.dart';
 import '../settings/sync_settings_screen.dart';
 import '../settings/theme_settings_screen.dart';
 import '../analytics/analytics_dashboard_screen.dart';
 import '../expenses/add_expense_screen.dart';
+import '../balances/balance_screen.dart';
+import '../social/activity_feed_screen.dart';
 import '../../providers/group_provider.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -41,7 +41,7 @@ class _HomeScreenState extends State<HomeScreen> {
     DashboardScreen(onNavigate: _onItemTapped),
     const FriendListScreen(),
     const GroupListScreen(),
-    const ActivityScreen(),
+    const ActivityFeedScreen(),
     const ProfileScreen(),
   ];
 
@@ -168,9 +168,12 @@ class DashboardScreen extends StatelessWidget {
                     'Balances',
                     Icons.account_balance_wallet,
                     Colors.orange,
-                    () {
-                      // Navigate to balances
-                    },
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BalanceScreen(),
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -309,36 +312,6 @@ class DashboardScreen extends StatelessWidget {
   }
 }
 
-// Activity Screen (Placeholder)
-class ActivityScreen extends StatelessWidget {
-  const ActivityScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('Activity')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.history, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              'Activity Feed',
-              style: TextStyle(fontSize: 24, color: Colors.grey[600]),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Coming in Phase 12',
-              style: TextStyle(color: Colors.grey[500]),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
 // Profile Screen
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -407,30 +380,6 @@ class ProfileScreen extends StatelessWidget {
                   MaterialPageRoute(
                     builder: (context) => const CurrencySettingsScreen(),
                   ),
-                );
-              },
-            ),
-          ),
-
-          // Language Settings
-          Card(
-            child: Consumer<LocaleProvider>(
-              builder: (context, localeProvider, _) {
-                return ListTile(
-                  leading: const Icon(Icons.language),
-                  title: const Text('Language Settings'),
-                  subtitle: Text(
-                    'Default: ${localeProvider.getLanguageName(userProfile?.language ?? 'en')}',
-                  ),
-                  trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                  onTap: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (context) => const LanguageSettingsScreen(),
-                      ),
-                    );
-                  },
                 );
               },
             ),

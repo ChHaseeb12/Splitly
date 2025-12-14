@@ -154,9 +154,12 @@ class _AddMemberScreenState extends State<AddMemberScreen> {
                             );
 
                             if (confirm == true && context.mounted) {
+                              final currentUser = authProvider.currentUser!;
                               final success = await groupProvider.addMember(
                                 widget.group.groupId,
                                 user.uid,
+                                user.displayName,
+                                currentUser.displayName ?? 'User',
                               );
 
                               if (success && context.mounted) {

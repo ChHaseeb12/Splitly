@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../providers/balance_provider.dart';
 import '../../providers/auth_provider.dart';
 
@@ -11,13 +12,15 @@ class BalanceScreen extends StatefulWidget {
 }
 
 class _BalanceScreenState extends State<BalanceScreen> {
+  final Map<String, String> _userNames = {};
+
   @override
   void initState() {
     super.initState();
     _loadBalances();
   }
 
-  void _loadBalances() {
+  Future<void> _loadBalances() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     final balanceProvider = Provider.of<BalanceProvider>(
       context,
@@ -25,8 +28,34 @@ class _BalanceScreenState extends State<BalanceScreen> {
     );
 
     if (authProvider.currentUser != null) {
-      balanceProvider.loadDebtsForUser(authProvider.currentUser!.uid);
+      await balanceProvider.loadDebtsForUser(authProvider.currentUser!.uid);
+      print('Loaded ${balanceProvider.debts.length} debts');
+      print('Summary balances: ${balanceProvider.summaryBalances}');
     }
+  }
+
+  Future<String> _getUserName(String userId) async {
+    if (_userNames.containsKey(userId)) {
+      return _userNames[userId]!;
+    }
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(userId)
+          .get();
+
+      if (doc.exists) {
+        final name = doc.data()?['displayName'] as String? ?? 'Unknown User';
+        _userNames[userId] = name;
+        return name;
+      }
+    } catch (e) {
+      // Ignore error and return fallback
+    }
+
+    _userNames[userId] = 'Unknown User';
+    return 'Unknown User';
   }
 
   @override
@@ -56,6 +85,37 @@ class _BalanceScreenState extends State<BalanceScreen> {
       ),
       body: balanceProvider.isLoading
           ? const Center(child: CircularProgressIndicator())
+          : balanceProvider.errorMessage != null
+          ? Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.error_outline, size: 64, color: Colors.red[300]),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Error loading balances',
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 32),
+                    child: Text(
+                      balanceProvider.errorMessage!,
+                      textAlign: TextAlign.center,
+                      style: TextStyle(color: Colors.grey[600]),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: _loadBalances,
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            )
           : RefreshIndicator(
               onRefresh: () async => _loadBalances(),
               child: SingleChildScrollView(
@@ -217,6 +277,17 @@ class _BalanceScreenState extends State<BalanceScreen> {
               'All settled up!',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'No outstanding balances',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Add expenses in a group to see balances here',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       );
@@ -232,38 +303,47 @@ class _BalanceScreenState extends State<BalanceScreen> {
         const SizedBox(height: 12),
         ...suggestions.map((transaction) {
           final isUserPaying = transaction.fromUserId == userId;
-          return Card(
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isUserPaying ? Colors.red : Colors.green,
-                child: Icon(
-                  isUserPaying ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: Colors.white,
-                ),
-              ),
-              title: Text(
-                isUserPaying
-                    ? 'Pay ${transaction.toUserId}'
-                    : '${transaction.fromUserId} pays you',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text(transaction.currency),
-              trailing: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  Text(
-                    '\$${transaction.amount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: isUserPaying ? Colors.red : Colors.green,
+          final otherUserId = isUserPaying
+              ? transaction.toUserId
+              : transaction.fromUserId;
+
+          return FutureBuilder<String>(
+            future: _getUserName(otherUserId),
+            builder: (context, snapshot) {
+              final userName = snapshot.data ?? 'Loading...';
+
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isUserPaying ? Colors.red : Colors.green,
+                    child: Icon(
+                      isUserPaying ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: Colors.white,
                     ),
                   ),
-                ],
-              ),
-              onTap: () => _showSettleDialog(transaction, userId),
-            ),
+                  title: Text(
+                    isUserPaying ? 'Pay $userName' : '$userName pays you',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text(transaction.currency),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        '\$${transaction.amount.toStringAsFixed(2)}',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: isUserPaying ? Colors.red : Colors.green,
+                        ),
+                      ),
+                    ],
+                  ),
+                  onTap: () => _showSettleDialog(transaction, userId, userName),
+                ),
+              );
+            },
           );
         }),
       ],
@@ -281,6 +361,17 @@ class _BalanceScreenState extends State<BalanceScreen> {
               'No debts to show',
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
+            const SizedBox(height: 8),
+            Text(
+              'All balances are settled',
+              style: TextStyle(color: Colors.grey[600]),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Add expenses in a group to track balances',
+              style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              textAlign: TextAlign.center,
+            ),
           ],
         ),
       );
@@ -296,42 +387,46 @@ class _BalanceScreenState extends State<BalanceScreen> {
         const SizedBox(height: 12),
         ...balanceProvider.debts.map((debt) {
           final isUserOwing = debt.fromUserId == userId;
-          return Card(
-            child: ListTile(
-              leading: CircleAvatar(
-                backgroundColor: isUserOwing ? Colors.red : Colors.green,
-                child: Icon(
-                  isUserOwing ? Icons.arrow_upward : Icons.arrow_downward,
-                  color: Colors.white,
+          final otherUserId = isUserOwing ? debt.toUserId : debt.fromUserId;
+
+          return FutureBuilder<String>(
+            future: _getUserName(otherUserId),
+            builder: (context, snapshot) {
+              final userName = snapshot.data ?? 'Loading...';
+
+              return Card(
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: isUserOwing ? Colors.red : Colors.green,
+                    child: Icon(
+                      isUserOwing ? Icons.arrow_upward : Icons.arrow_downward,
+                      color: Colors.white,
+                    ),
+                  ),
+                  title: Text(
+                    isUserOwing ? 'You owe $userName' : '$userName owes you',
+                    style: const TextStyle(fontWeight: FontWeight.bold),
+                  ),
+                  subtitle: Text('${debt.expenseIds.length} expenses'),
+                  trailing: Text(
+                    '\$${debt.amount.toStringAsFixed(2)}',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: isUserOwing ? Colors.red : Colors.green,
+                    ),
+                  ),
                 ),
-              ),
-              title: Text(
-                isUserOwing
-                    ? 'You owe ${debt.toUserId}'
-                    : '${debt.fromUserId} owes you',
-                style: const TextStyle(fontWeight: FontWeight.bold),
-              ),
-              subtitle: Text('${debt.expenseIds.length} expenses'),
-              trailing: Text(
-                '\$${debt.amount.toStringAsFixed(2)}',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: isUserOwing ? Colors.red : Colors.green,
-                ),
-              ),
-            ),
+              );
+            },
           );
         }),
       ],
     );
   }
 
-  void _showSettleDialog(dynamic transaction, String userId) {
+  void _showSettleDialog(dynamic transaction, String userId, String userName) {
     final isUserPaying = transaction.fromUserId == userId;
-    final otherUserId = isUserPaying
-        ? transaction.toUserId
-        : transaction.fromUserId;
 
     showDialog(
       context: context,
@@ -342,9 +437,7 @@ class _BalanceScreenState extends State<BalanceScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              isUserPaying
-                  ? 'Pay $otherUserId'
-                  : 'Record payment from $otherUserId',
+              isUserPaying ? 'Pay $userName' : 'Record payment from $userName',
             ),
             const SizedBox(height: 16),
             Text(
@@ -365,11 +458,17 @@ class _BalanceScreenState extends State<BalanceScreen> {
                 listen: false,
               );
 
+              // Get both user names
+              final fromUserName = await _getUserName(transaction.fromUserId);
+              final toUserName = await _getUserName(transaction.toUserId);
+
               final success = await balanceProvider.settleDebt(
                 fromUserId: transaction.fromUserId,
                 toUserId: transaction.toUserId,
                 amount: transaction.amount,
                 currency: transaction.currency,
+                fromUserName: fromUserName,
+                toUserName: toUserName,
               );
 
               if (context.mounted) {
