@@ -38,17 +38,21 @@ class _CurrencySettingsScreenState extends State<CurrencySettingsScreen> {
     });
 
     try {
-      final currentUser = context.read<AuthProvider>().currentUser;
+      final authProvider = context.read<AuthProvider>();
+      final currentUser = authProvider.currentUser;
       if (currentUser != null) {
         await _authService.updateUserProfile(
           uid: currentUser.uid,
           currency: currency,
         );
 
-        // Update local state
-        context.read<CurrencyProvider>().setDefaultCurrency(currency);
+        // Update auth provider to reload user profile
+        await authProvider.updateUserProfile(currency: currency);
 
+        // Update currency provider
         if (mounted) {
+          context.read<CurrencyProvider>().setDefaultCurrency(currency);
+
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Default currency updated')),
           );

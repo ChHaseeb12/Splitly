@@ -25,6 +25,18 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
 
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = Provider.of<AuthProvider>(context, listen: false);
+      final groupProvider = Provider.of<GroupProvider>(context, listen: false);
+      if (authProvider.currentUser != null) {
+        groupProvider.loadUserGroups(authProvider.currentUser!.uid);
+      }
+    });
+  }
+
   List<Widget> get _screens => [
     DashboardScreen(onNavigate: _onItemTapped),
     const FriendListScreen(),
@@ -497,6 +509,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
             child: const Text('Cancel'),
           ),
+
           TextButton(
             onPressed: () async {
               await context.read<AuthProvider>().logout();

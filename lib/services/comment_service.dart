@@ -88,7 +88,7 @@ class CommentService {
   Stream<List<ActivityFeedItem>> getGroupActivity(String groupId) {
     return _firestore
         .collection('activities')
-        .where('data.groupId', isEqualTo: groupId)
+        .where('groupId', isEqualTo: groupId)
         .orderBy('createdAt', descending: true)
         .limit(50)
         .snapshots()

@@ -72,6 +72,7 @@ class ActivityFeedItem {
   final String userName;
   final ActivityType type;
   final String description;
+  final String? groupId;
   final Map<String, dynamic> data;
   final DateTime createdAt;
 
@@ -81,6 +82,7 @@ class ActivityFeedItem {
     required this.userName,
     required this.type,
     required this.description,
+    this.groupId,
     required this.data,
     required this.createdAt,
   });
@@ -95,6 +97,7 @@ class ActivityFeedItem {
         orElse: () => ActivityType.OTHER,
       ),
       description: json['description'] as String,
+      groupId: json['groupId'] as String?,
       data: Map<String, dynamic>.from(json['data'] ?? {}),
       createdAt: DateTime.parse(json['createdAt'] as String),
     );
@@ -107,6 +110,7 @@ class ActivityFeedItem {
       'userName': userName,
       'type': type.toString().split('.').last,
       'description': description,
+      'groupId': groupId,
       'data': data,
       'createdAt': createdAt.toIso8601String(),
     };

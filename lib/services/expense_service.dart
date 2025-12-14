@@ -67,8 +67,6 @@ class ExpenseService {
         return _calculateUnequalSplit(participants);
       case SplitType.percentage:
         return _calculatePercentageSplit(totalAmount, participants);
-      case SplitType.shares:
-        return _calculateSharesSplit(totalAmount, participants);
     }
   }
 
@@ -123,29 +121,6 @@ class ExpenseService {
     return participants.map((p) {
       final percentage = (p['percentage'] as num).toDouble();
       final splitAmount = (totalAmount * percentage / 100 * 100).round() / 100;
-      return ExpenseParticipant(
-        userId: p['userId'] as String,
-        splitAmount: splitAmount,
-      );
-    }).toList();
-  }
-
-  // Shares split: distribute based on shares
-  List<ExpenseParticipant> _calculateSharesSplit(
-    double totalAmount,
-    List<Map<String, dynamic>> participants,
-  ) {
-    final totalShares = participants.fold<double>(
-      0,
-      (acc, p) => acc + (p['shares'] as num).toDouble(),
-    );
-
-    if (totalShares == 0) throw Exception('Total shares cannot be zero');
-
-    return participants.map((p) {
-      final shares = (p['shares'] as num).toDouble();
-      final splitAmount =
-          (totalAmount * shares / totalShares * 100).round() / 100;
       return ExpenseParticipant(
         userId: p['userId'] as String,
         splitAmount: splitAmount,

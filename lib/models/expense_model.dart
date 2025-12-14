@@ -2,7 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 enum ExpenseStatus { pending, settled, archived }
 
-enum SplitType { equal, unequal, percentage, shares }
+enum SplitType { equal, unequal, percentage }
 
 class ExpenseParticipant {
   final String userId;

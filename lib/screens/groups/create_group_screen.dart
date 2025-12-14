@@ -16,9 +16,17 @@ class _CreateGroupScreenState extends State<CreateGroupScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _descriptionController = TextEditingController();
-  String _selectedCurrency = 'USD';
+  late String _selectedCurrency;
   bool _simplificationEnabled = true;
   bool _notificationsEnabled = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with user's default currency
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _selectedCurrency = authProvider.userProfile?.currency ?? 'USD';
+  }
 
   final List<String> _currencies = [
     'USD',

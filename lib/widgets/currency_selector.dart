@@ -59,7 +59,6 @@ class _CurrencySelectorState extends State<CurrencySelector> {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
           children: [
             if (selectedCurrencyModel != null) ...[
               Text(
@@ -67,22 +66,31 @@ class _CurrencySelectorState extends State<CurrencySelector> {
                 style: const TextStyle(fontSize: 24),
               ),
               const SizedBox(width: 8),
-              Text(
-                selectedCurrencyModel.code,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+              Flexible(
+                child: Text(
+                  selectedCurrencyModel.code,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               const SizedBox(width: 4),
-              Text(
-                selectedCurrencyModel.symbol,
-                style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+              Flexible(
+                child: Text(
+                  selectedCurrencyModel.symbol,
+                  style: TextStyle(fontSize: 14, color: Colors.grey.shade600),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ] else ...[
-              Text(
-                widget.selectedCurrency,
-                style: const TextStyle(fontSize: 16),
+              Flexible(
+                child: Text(
+                  widget.selectedCurrency,
+                  style: const TextStyle(fontSize: 16),
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
             ],
             const SizedBox(width: 8),
@@ -100,112 +108,106 @@ class _CurrencySelectorState extends State<CurrencySelector> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
       ),
-      builder: (context) => DraggableScrollableSheet(
-        initialChildSize: 0.9,
-        minChildSize: 0.5,
-        maxChildSize: 0.9,
-        expand: false,
-        builder: (context, scrollController) {
-          return Column(
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border(
-                    bottom: BorderSide(color: Colors.grey.shade200),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Select Currency',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.close),
-                          onPressed: () => Navigator.pop(context),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    // Search field
-                    TextField(
-                      controller: _searchController,
-                      decoration: InputDecoration(
-                        hintText: 'Search currency...',
-                        prefixIcon: const Icon(Icons.search),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
+      builder: (context) => SizedBox(
+        height: MediaQuery.of(context).size.height * 0.9,
+        child: Column(
+          children: [
+            // Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                border: Border(bottom: BorderSide(color: Colors.grey.shade200)),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Select Currency',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
                         ),
                       ),
-                      onChanged: _filterCurrencies,
+                      IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Search field
+                  TextField(
+                    controller: _searchController,
+                    decoration: InputDecoration(
+                      hintText: 'Search currency...',
+                      prefixIcon: const Icon(Icons.search),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
+                      ),
+                    ),
+                    onChanged: _filterCurrencies,
+                  ),
+                ],
+              ),
+            ),
+
+            // Currency list
+            Expanded(
+              child: ListView(
+                children: [
+                  // Popular currencies (if enabled)
+                  if (widget.showPopular && _searchController.text.isEmpty) ...[
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'Popular Currencies',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
+                    ),
+                    ...context
+                        .read<CurrencyProvider>()
+                        .getPopularCurrencies()
+                        .map((code) {
+                          final currency = context
+                              .read<CurrencyProvider>()
+                              .getCurrency(code);
+                          if (currency == null) return const SizedBox.shrink();
+                          return _buildCurrencyTile(currency, isPopular: true);
+                        }),
+                    Divider(color: Colors.grey.shade200, thickness: 8),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        'All Currencies',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.grey.shade600,
+                        ),
+                      ),
                     ),
                   ],
-                ),
+                  // All currencies
+                  ..._filteredCurrencies.map((currency) {
+                    return _buildCurrencyTile(currency);
+                  }),
+                ],
               ),
-
-              // Popular currencies (if enabled)
-              if (widget.showPopular && _searchController.text.isEmpty) ...[
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'Popular Currencies',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-                ...context.read<CurrencyProvider>().getPopularCurrencies().map((
-                  code,
-                ) {
-                  final currency = context.read<CurrencyProvider>().getCurrency(
-                    code,
-                  );
-                  if (currency == null) return const SizedBox.shrink();
-                  return _buildCurrencyTile(currency, isPopular: true);
-                }),
-                Divider(color: Colors.grey.shade200, thickness: 8),
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    'All Currencies',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                ),
-              ],
-
-              // Currency list
-              Expanded(
-                child: ListView.builder(
-                  controller: scrollController,
-                  itemCount: _filteredCurrencies.length,
-                  itemBuilder: (context, index) {
-                    return _buildCurrencyTile(_filteredCurrencies[index]);
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ],
+        ),
       ),
     );
   }

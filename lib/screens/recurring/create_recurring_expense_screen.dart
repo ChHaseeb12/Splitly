@@ -24,11 +24,19 @@ class _CreateRecurringExpenseScreenState
   final _descriptionController = TextEditingController();
 
   String _selectedCategory = 'FOOD';
-  String _selectedCurrency = 'USD';
+  late String _selectedCurrency;
   RecurringFrequency _selectedFrequency = RecurringFrequency.MONTHLY;
   DateTime _startDate = DateTime.now();
   DateTime? _endDate;
   bool _autoCreate = true;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize with user's default currency
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    _selectedCurrency = authProvider.userProfile?.currency ?? 'USD';
+  }
 
   final List<String> _categories = [
     'FOOD',
