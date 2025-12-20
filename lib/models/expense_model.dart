@@ -68,6 +68,9 @@ class ExpenseModel {
       'description': description,
       'date': date,
       'participants': participants.map((p) => p.toJson()).toList(),
+      'participantIds': participants
+          .map((p) => p.userId)
+          .toList(), // For easier querying
       'splitType': splitType.toString().split('.').last,
       'status': status.toString().split('.').last,
       'attachments': attachments,

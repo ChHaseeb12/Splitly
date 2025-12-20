@@ -18,7 +18,7 @@ class AnalyticsService {
       // Query expenses
       Query query = _firestore
           .collection('expenses')
-          .where('participants', arrayContains: userId)
+          .where('participantIds', arrayContains: userId)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
 
@@ -38,8 +38,8 @@ class AnalyticsService {
 
       // Get all existing group IDs to filter out deleted groups
       final expenseGroupIds = expenses
-          .where((e) => e.groupId != null)
-          .map((e) => e.groupId!)
+          .where((e) => e.groupId.isNotEmpty)
+          .map((e) => e.groupId)
           .toSet()
           .toList();
 
@@ -54,7 +54,7 @@ class AnalyticsService {
 
       // Filter out expenses from deleted groups
       final validExpenses = expenses.where((expense) {
-        if (expense.groupId == null) return true;
+        if (expense.groupId.isEmpty) return true;
         return existingGroupIds.contains(expense.groupId);
       }).toList();
 
@@ -154,7 +154,7 @@ class AnalyticsService {
     // Get expenses to count per category
     Query query = _firestore
         .collection('expenses')
-        .where('participants', arrayContains: userId)
+        .where('participantIds', arrayContains: userId)
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
         .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate));
 
@@ -174,8 +174,8 @@ class AnalyticsService {
 
     // Filter out deleted groups
     final expenseGroupIds = expenses
-        .where((e) => e.groupId != null)
-        .map((e) => e.groupId!)
+        .where((e) => e.groupId.isNotEmpty)
+        .map((e) => e.groupId)
         .toSet()
         .toList();
 
@@ -189,7 +189,7 @@ class AnalyticsService {
     }
 
     final validExpenses = expenses.where((expense) {
-      if (expense.groupId == null) return true;
+      if (expense.groupId.isEmpty) return true;
       return existingGroupIds.contains(expense.groupId);
     }).toList();
 
@@ -220,7 +220,7 @@ class AnalyticsService {
     try {
       Query query = _firestore
           .collection('expenses')
-          .where('participants', arrayContains: userId)
+          .where('participantIds', arrayContains: userId)
           .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startDate))
           .where('date', isLessThanOrEqualTo: Timestamp.fromDate(endDate))
           .orderBy('date');
@@ -245,7 +245,7 @@ class AnalyticsService {
           .map((e) => e.groupId!)
           .toSet()
           .toList();
-      
+
       final existingGroupIds = <String>{};
       if (expenseGroupIds.isNotEmpty) {
         final groupDocs = await _firestore

@@ -207,9 +207,17 @@ class RecurringExpenseService {
                 .toList() ??
             [];
 
+        // Get payer name
+        final payerDoc = await _firestore
+            .collection('users')
+            .doc(recurring.payerId)
+            .get();
+        final payerName = payerDoc.data()?['displayName'] ?? 'Unknown';
+
         await _expenseService.addExpense(
           groupId: recurring.groupId,
           payerId: recurring.payerId,
+          payerName: payerName,
           amount: recurring.amount,
           currency: recurring.currency,
           category: recurring.category,

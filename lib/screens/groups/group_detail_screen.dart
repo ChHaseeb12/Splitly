@@ -168,6 +168,7 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                   final success = await groupProvider.deleteGroup(
                     widget.group.groupId,
                     currentUserId,
+                    authProvider.currentUser!.displayName ?? 'Unknown',
                   );
                   if (success && context.mounted) {
                     Navigator.pop(context);
@@ -406,7 +407,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen> {
                                           .removeMember(
                                             widget.group.groupId,
                                             member.userId,
+                                            user.displayName,
                                             authProvider.currentUser!.uid,
+                                            authProvider
+                                                    .currentUser!
+                                                    .displayName ??
+                                                'Unknown',
                                           );
                                       if (success && context.mounted) {
                                         ScaffoldMessenger.of(

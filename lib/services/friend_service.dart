@@ -103,9 +103,32 @@ class FriendService {
   }
 
   // Remove friend
-  Future<void> removeFriend(String friendId) async {
+  Future<void> removeFriend(
+    String friendId,
+    String currentUserId,
+    String currentUserName,
+    String friendUserId,
+    String friendUserName,
+  ) async {
     try {
       await _firestore.collection('friends').doc(friendId).delete();
+
+      // Create activity
+      final now = DateTime.now();
+      final activity = ActivityFeedItem(
+        id: '${friendId}_removed_${now.millisecondsSinceEpoch}',
+        userId: currentUserId,
+        userName: currentUserName,
+        type: ActivityType.FRIEND_REMOVED,
+        description: 'removed $friendUserName as friend',
+        data: {
+          'targetUserId': friendUserId,
+          'targetUserName': friendUserName,
+          'participants': [currentUserId, friendUserId],
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to remove friend: $e');
     }

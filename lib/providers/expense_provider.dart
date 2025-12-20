@@ -19,6 +19,7 @@ class ExpenseProvider with ChangeNotifier {
   Future<String?> addExpense({
     required String groupId,
     required String payerId,
+    required String payerName,
     required double amount,
     required String currency,
     required String category,
@@ -35,6 +36,7 @@ class ExpenseProvider with ChangeNotifier {
       final expenseId = await _expenseService.addExpense(
         groupId: groupId,
         payerId: payerId,
+        payerName: payerName,
         amount: amount,
         currency: currency,
         category: category,

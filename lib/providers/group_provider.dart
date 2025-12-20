@@ -78,14 +78,22 @@ class GroupProvider with ChangeNotifier {
   Future<bool> removeMember(
     String groupId,
     String userId,
+    String userName,
     String requesterId,
+    String requesterName,
   ) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      await _groupService.removeMember(groupId, userId, requesterId);
+      await _groupService.removeMember(
+        groupId,
+        userId,
+        userName,
+        requesterId,
+        requesterName,
+      );
 
       _isLoading = false;
       notifyListeners();
@@ -135,13 +143,17 @@ class GroupProvider with ChangeNotifier {
   }
 
   // Delete group
-  Future<bool> deleteGroup(String groupId, String requesterId) async {
+  Future<bool> deleteGroup(
+    String groupId,
+    String requesterId,
+    String requesterName,
+  ) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      await _groupService.deleteGroup(groupId, requesterId);
+      await _groupService.deleteGroup(groupId, requesterId, requesterName);
 
       _isLoading = false;
       notifyListeners();

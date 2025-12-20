@@ -103,13 +103,25 @@ class FriendProvider with ChangeNotifier {
   }
 
   // Remove friend
-  Future<bool> removeFriend(String friendId) async {
+  Future<bool> removeFriend(
+    String friendId,
+    String currentUserId,
+    String currentUserName,
+    String friendUserId,
+    String friendUserName,
+  ) async {
     try {
       _isLoading = true;
       _errorMessage = null;
       notifyListeners();
 
-      await _friendService.removeFriend(friendId);
+      await _friendService.removeFriend(
+        friendId,
+        currentUserId,
+        currentUserName,
+        friendUserId,
+        friendUserName,
+      );
 
       _isLoading = false;
       notifyListeners();

@@ -134,12 +134,18 @@ class _ActivityCard extends StatelessWidget {
         return Icons.comment;
       case ActivityType.MEMBER_ADDED:
         return Icons.person_add;
+      case ActivityType.MEMBER_REMOVED:
+        return Icons.person_remove;
       case ActivityType.FRIEND_REQUEST_SENT:
         return Icons.send;
       case ActivityType.FRIEND_REQUEST_ACCEPTED:
         return Icons.check_circle;
+      case ActivityType.FRIEND_REMOVED:
+        return Icons.person_off;
       case ActivityType.GROUP_CREATED:
         return Icons.group_add;
+      case ActivityType.GROUP_DELETED:
+        return Icons.group_remove;
       default:
         return Icons.info;
     }
@@ -161,10 +167,15 @@ class _ActivityCard extends StatelessWidget {
       case ActivityType.MEMBER_ADDED:
       case ActivityType.FRIEND_REQUEST_ACCEPTED:
         return AppColors.success;
+      case ActivityType.MEMBER_REMOVED:
+      case ActivityType.FRIEND_REMOVED:
+        return AppColors.warning;
       case ActivityType.FRIEND_REQUEST_SENT:
         return AppColors.info;
       case ActivityType.GROUP_CREATED:
         return AppColors.primary;
+      case ActivityType.GROUP_DELETED:
+        return AppColors.error;
       default:
         return AppColors.textSecondary;
     }

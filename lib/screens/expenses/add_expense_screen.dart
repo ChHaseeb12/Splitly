@@ -476,6 +476,7 @@ class _AddExpenseScreenState extends State<AddExpenseScreen> {
     final expenseId = await expenseProvider.addExpense(
       groupId: widget.groupId,
       payerId: authProvider.currentUser!.uid,
+      payerName: authProvider.currentUser!.displayName ?? 'Unknown',
       amount: amount,
       currency: _selectedCurrency,
       category: _selectedCategory,

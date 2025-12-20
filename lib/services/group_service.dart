@@ -112,7 +112,9 @@ class GroupService {
   Future<void> removeMember(
     String groupId,
     String userId,
+    String userName,
     String requesterId,
+    String requesterName,
   ) async {
     try {
       final groupDoc = await _firestore.collection('groups').doc(groupId).get();
@@ -136,10 +138,29 @@ class GroupService {
           .where((m) => m.userId != userId)
           .toList();
 
+      final now = DateTime.now();
       await _firestore.collection('groups').doc(groupId).update({
         'members': updatedMembers.map((m) => m.toJson()).toList(),
-        'updatedAt': DateTime.now(),
+        'updatedAt': now,
       });
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${groupId}_member_removed_${now.millisecondsSinceEpoch}',
+        userId: requesterId,
+        userName: requesterName,
+        type: ActivityType.MEMBER_REMOVED,
+        description: 'removed $userName from ${group.name}',
+        groupId: groupId,
+        data: {
+          'groupName': group.name,
+          'removedMemberId': userId,
+          'removedMemberName': userName,
+          'participants': [requesterId, userId],
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to remove member: $e');
     }
@@ -187,7 +208,11 @@ class GroupService {
   }
 
   // Delete group (admin only, cascade cleanup)
-  Future<void> deleteGroup(String groupId, String requesterId) async {
+  Future<void> deleteGroup(
+    String groupId,
+    String requesterId,
+    String requesterName,
+  ) async {
     try {
       final groupDoc = await _firestore.collection('groups').doc(groupId).get();
       if (!groupDoc.exists) {
@@ -213,6 +238,22 @@ class GroupService {
 
       // Delete the group
       await _firestore.collection('groups').doc(groupId).delete();
+
+      // Create activity
+      final now = DateTime.now();
+      final activity = ActivityFeedItem(
+        id: '${groupId}_deleted_${now.millisecondsSinceEpoch}',
+        userId: requesterId,
+        userName: requesterName,
+        type: ActivityType.GROUP_DELETED,
+        description: 'deleted group "${group.name}"',
+        data: {
+          'groupName': group.name,
+          'participants': group.members.map((m) => m.userId).toList(),
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
     } catch (e) {
       throw Exception('Failed to delete group: $e');
     }

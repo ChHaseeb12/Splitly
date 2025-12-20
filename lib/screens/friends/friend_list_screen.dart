@@ -193,8 +193,19 @@ class _FriendListScreenState extends State<FriendListScreen> {
                               );
 
                               if (confirm == true && context.mounted) {
+                                final authProvider = Provider.of<AuthProvider>(
+                                  context,
+                                  listen: false,
+                                );
                                 final success = await friendProvider
-                                    .removeFriend(friend.friendId);
+                                    .removeFriend(
+                                      friend.friendId,
+                                      authProvider.currentUser!.uid,
+                                      authProvider.currentUser!.displayName ??
+                                          'Unknown',
+                                      user.uid,
+                                      user.displayName,
+                                    );
                                 if (success && context.mounted) {
                                   ScaffoldMessenger.of(context).showSnackBar(
                                     const SnackBar(

@@ -1,13 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../models/expense_model.dart';
+import '../models/comment_model.dart';
+import 'comment_service.dart';
 
 class ExpenseService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final CommentService _commentService = CommentService();
 
   // Add a new expense
   Future<String> addExpense({
     required String groupId,
     required String payerId,
+    required String payerName,
     required double amount,
     required String currency,
     required String category,
@@ -48,6 +52,32 @@ class ExpenseService {
       );
 
       await expenseRef.set(expense.toJson());
+
+      // Get group name for activity
+      final groupDoc = await _firestore.collection('groups').doc(groupId).get();
+      final groupName = groupDoc.data()?['name'] ?? 'Unknown Group';
+
+      // Create activity
+      final activity = ActivityFeedItem(
+        id: '${expenseRef.id}_created_${now.millisecondsSinceEpoch}',
+        userId: payerId,
+        userName: payerName,
+        type: ActivityType.EXPENSE_ADDED,
+        description:
+            'added expense "$category" ($currency ${amount.toStringAsFixed(2)}) in $groupName',
+        groupId: groupId,
+        data: {
+          'expenseId': expenseRef.id,
+          'groupName': groupName,
+          'amount': amount,
+          'currency': currency,
+          'category': category,
+          'participants': calculatedParticipants.map((p) => p.userId).toList(),
+        },
+        createdAt: now,
+      );
+      await _commentService.createActivity(activity);
+
       return expenseRef.id;
     } catch (e) {
       throw Exception('Failed to add expense: $e');
