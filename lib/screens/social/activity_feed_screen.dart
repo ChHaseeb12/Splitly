@@ -44,6 +44,46 @@ class _ActivityFeedScreenState extends State<ActivityFeedScreen> {
         title: Text(
           widget.groupId != null ? 'Group Activity' : 'Activity Feed',
         ),
+        actions: [
+          if (commentProvider.activities.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.delete_sweep),
+              tooltip: 'Clear All Activity',
+              onPressed: () async {
+                final confirm = await showDialog<bool>(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('Clear All Activity'),
+                    content: const Text(
+                      'Are you sure you want to clear all activity? This cannot be undone.',
+                    ),
+                    actions: [
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, false),
+                        child: const Text('Cancel'),
+                      ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context, true),
+                        child: const Text(
+                          'Clear All',
+                          style: TextStyle(color: Colors.red),
+                        ),
+                      ),
+                    ],
+                  ),
+                );
+
+                if (confirm == true && context.mounted) {
+                  await commentProvider.clearSessionActivities();
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('All activity cleared')),
+                    );
+                  }
+                }
+              },
+            ),
+        ],
       ),
       body: commentProvider.isLoading
           ? const LoadingState(message: 'Loading activity...')

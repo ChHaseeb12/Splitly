@@ -36,57 +36,62 @@
 ---
 
 #### 2. Analytics Screen - Not Showing Data
-**Problem:** The analytics screen spending summary was not displaying any data even when expenses existed.
+**Problem:** The analytics screen spending summary was not displaying any data even when expenses existed. The debt summary was working correctly showing "You Owe", "You Are Owed", and "Net Balance".
 
-**Root Cause:** The Firestore query was using `arrayContains` on the `participants` field, but participants are stored as an array of objects (with userId and splitAmount), not as an array of user IDs.
+**Root Cause:** The Firestore query was using `arrayContains` on the `participantIds` field, but this field doesn't exist in expenses created before the fix. The query returned no results, so all values showed as $0.00.
 
 **Solution:**
-1. **Updated ExpenseModel** (`lib/models/expense_model.dart`):
-   - Added `participantIds` field to the JSON output
-   - This field contains just the user IDs for easier querying
-   - Example: `participantIds: ['user1', 'user2', 'user3']`
+1. **Removed dependency on participantIds field**:
+   - Changed query to fetch all expenses in the date range
+   - Filter expenses client-side to check if user is involved (as payer or participant)
+   - This works for both old and new expenses
 
-2. **Updated AnalyticsService** (`lib/services/analytics_service.dart`):
-   - Changed all queries from `where('participants', arrayContains: userId)` to `where('participantIds', arrayContains: userId)`
-   - Updated methods:
-     - `getSpendingSummary()`
-     - `getCategorySpending()`
-     - `getSpendingTrend()`
+2. **Used working debt data**:
+   - The debt collection queries were already working correctly
+   - Kept using debt data for "You Owe" and "You Are Owed" amounts
+   - These values now display correctly in spending summary
 
-3. **Fixed Null Safety Issues**:
-   - Changed `expense.groupId != null` checks to `expense.groupId.isNotEmpty`
-   - Changed `expense.groupId == null` checks to `expense.groupId.isEmpty`
-   - This is because groupId is a non-nullable String field
+3. **Updated all analytics methods**:
+   - `getSpendingSummary()` - Now fetches all expenses and filters client-side
+   - `getCategorySpending()` - Uses same approach
+   - `getSpendingTrend()` - Uses same approach
 
 **Technical Details:**
 
-Before:
+Before (Not Working):
 ```dart
-// Query that didn't work
+// Query that required participantIds field
 Query query = _firestore
     .collection('expenses')
-    .where('participants', arrayContains: userId) // ❌ participants is array of objects
+    .where('participantIds', arrayContains: userId) // ❌ Field doesn't exist in old expenses
+    .where('date', isGreaterThanOrEqualTo: startDate)
 ```
 
-After:
+After (Working):
 ```dart
-// Query that works
+// Query all expenses, filter client-side
 Query query = _firestore
     .collection('expenses')
-    .where('participantIds', arrayContains: userId) // ✅ participantIds is array of strings
+    .where('date', isGreaterThanOrEqualTo: startDate)
+    .where('date', isLessThanOrEqualTo: endDate);
+
+final expenses = snapshot.docs
+    .map((doc) => ExpenseModel.fromJson(...))
+    .where((expense) {
+      // Check if user is payer
+      if (expense.payerId == userId) return true;
+      // Check if user is in participants
+      return expense.participants.any((p) => p.userId == userId);
+    })
+    .toList();
 ```
 
-**Expense Document Structure:**
-```json
-{
-  "expenseId": "exp123",
-  "participants": [
-    {"userId": "user1", "splitAmount": 10.0},
-    {"userId": "user2", "splitAmount": 15.0}
-  ],
-  "participantIds": ["user1", "user2"] // New field for querying
-}
-```
+**Why This Works:**
+- Fetches all expenses in the date range (no field dependency)
+- Filters in memory to find user's expenses
+- Works with both old and new expense documents
+- Uses debt collection data (which is working) for owed/lent amounts
+- No migration needed for existing expenses
 
 ---
 
@@ -198,33 +203,11 @@ Future<String> addExpense({
 
 ### Migration Notes
 
-**For Existing Expenses:**
-- Existing expense documents don't have the `participantIds` field
-- The field will be added automatically when:
-  - An expense is updated
-  - A new expense is created
-- To migrate all existing expenses, you can run a one-time script:
-
-```dart
-// Migration script (run once)
-Future<void> migrateExpenses() async {
-  final expenses = await FirebaseFirestore.instance
-      .collection('expenses')
-      .get();
-  
-  for (var doc in expenses.docs) {
-    final data = doc.data();
-    final participants = data['participants'] as List<dynamic>;
-    final participantIds = participants
-        .map((p) => p['userId'] as String)
-        .toList();
-    
-    await doc.reference.update({
-      'participantIds': participantIds,
-    });
-  }
-}
-```
+**No Migration Required:**
+- The fix now works with both old and new expense documents
+- Client-side filtering handles expenses without the `participantIds` field
+- Debt data (which is working) is used for owed/lent amounts
+- All existing expenses will work immediately without any updates
 
 ---
 

@@ -188,21 +188,117 @@ class _AnalyticsDashboardScreenState extends State<AnalyticsDashboardScreen> {
 
   Widget _buildPeriodSelector(AnalyticsProvider provider) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            const Icon(Icons.calendar_today, size: 20),
-            const SizedBox(width: 8),
-            Text(
-              provider.selectedPeriod.displayName,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      child: InkWell(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            builder: (context) => Container(
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Padding(
+                    padding: EdgeInsets.all(16),
+                    child: Text(
+                      'Select Period',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const Divider(height: 1),
+                  _buildPeriodOption(
+                    AnalyticsPeriod.thisWeek,
+                    'This Week',
+                    provider,
+                  ),
+                  _buildPeriodOption(
+                    AnalyticsPeriod.thisMonth,
+                    'This Month',
+                    provider,
+                  ),
+                  _buildPeriodOption(
+                    AnalyticsPeriod.thisYear,
+                    'This Year',
+                    provider,
+                  ),
+                  _buildPeriodOption(
+                    AnalyticsPeriod.last30Days,
+                    'Last 30 Days',
+                    provider,
+                  ),
+                  _buildPeriodOption(
+                    AnalyticsPeriod.last90Days,
+                    'Last 90 Days',
+                    provider,
+                  ),
+                  _buildPeriodOption(
+                    AnalyticsPeriod.allTime,
+                    'All Time',
+                    provider,
+                  ),
+                ],
+              ),
             ),
-            const Spacer()
-            
-          ],
+          );
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              const Icon(Icons.calendar_today, size: 20),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Period',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      provider.selectedPeriod.displayName,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.arrow_drop_down, size: 24),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  Widget _buildPeriodOption(
+    AnalyticsPeriod period,
+    String label,
+    AnalyticsProvider provider,
+  ) {
+    final isSelected = provider.selectedPeriod == period;
+    return ListTile(
+      leading: Icon(
+        isSelected ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+        color: isSelected ? Theme.of(context).primaryColor : Colors.grey,
+      ),
+      title: Text(
+        label,
+        style: TextStyle(
+          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+          color: isSelected ? Theme.of(context).primaryColor : null,
+        ),
+      ),
+      onTap: () {
+        provider.setSelectedPeriod(period);
+        Navigator.pop(context);
+        _loadAnalytics();
+      },
     );
   }
 }
